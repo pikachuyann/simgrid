@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <cmath>
 
 /*---------------------------------------------------------------------*/
 /* Private part.                                                       */
@@ -475,4 +476,11 @@ double RngStream_RandU01 (RngStream g)
 int RngStream_RandInt (RngStream g, int i, int j)
 {
    return i + (int) ((j - i + 1.0) * RngStream_RandU01 (g));
+}
+
+// Draw a value for the exponential law of parameter lambda, given the RngStream, through the quantile function
+double RngStream_RandExp (RngStream g, double lambda)
+{
+	return -1/lambda*log(RngStream_RandU01(g));
+	// The quantile function of the exponential law would use 1-RngStream_U01(g) but if the random number is generated correctly it shouldn't change anything.
 }
