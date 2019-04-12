@@ -38,6 +38,7 @@ XBT_PUBLIC void RngStream_WriteState(RngStream g);
 XBT_PUBLIC void RngStream_WriteStateFull(RngStream g);
 XBT_PUBLIC double RngStream_RandU01(RngStream g);
 XBT_PUBLIC int RngStream_RandInt(RngStream g, int i, int j);
+XBT_PUBLIC double RngStream_RandExp (RngStream g, double lambda);
 
 SG_END_DECL();
 
