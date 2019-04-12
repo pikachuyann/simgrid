@@ -47,6 +47,18 @@ namespace rng {
 				xbt_assert(false,"The exponential law is not implemented for the current RNG.");
 		}
 	}
+	
+	double Unif(double min, double max) {
+		switch (currentrng) {
+			case RNG_MersenneTwister:
+				{ boost::random::uniform_real_distribution<> unif(min, max);
+				 return unif(mt19937_rng); }
+			case RNG_RngStream:
+				return RngStream_RandUnif(rngstream,min,max);
+			default:
+				xbt_assert(false,"The (real) uniform law is not implemented for the current RNG.");
+		}
+	}
 }
 }
 }

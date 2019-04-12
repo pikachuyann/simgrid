@@ -13,6 +13,7 @@ namespace rng {
 	void UseRngStream(std::string);
 	void SetMersenneSeed(int);
 	double Exp(double);
+	double Unif(double, double);
 }
 }
 }

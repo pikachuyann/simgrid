@@ -484,3 +484,8 @@ double RngStream_RandExp (RngStream g, double lambda)
 	return -1/lambda*log(RngStream_RandU01(g));
 	// The quantile function of the exponential law would use 1-RngStream_U01(g) but if the random number is generated correctly it shouldn't change anything.
 }
+
+double RngStream_RandUnif (RngStream g, double min, double max)
+{
+	return min + ((max - min) * RngStream_RandU01(g));
+}
