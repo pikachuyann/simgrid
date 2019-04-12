@@ -570,6 +570,10 @@ set(JEDULE_SRC
   src/instr/jedule/jedule_sd_binding.cpp
   )
 
+set(STATMC_SRC
+  src/statmc/rng.cpp
+)
+
 set(MC_SRC_BASE
   src/mc/mc_base.cpp
   src/mc/mc_base.h
@@ -789,6 +793,7 @@ endif()
 set(simgrid_sources
   ${S4U_SRC}
   ${SIMGRID_SRC}
+  ${STATMC_SRC}
   ${MC_SRC_BASE}
   ${SIMIX_SRC}
   ${SURF_SRC}
