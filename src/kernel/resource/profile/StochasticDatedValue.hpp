@@ -23,7 +23,11 @@ public:
   double get_date();
   double get_value();
   explicit StochasticDatedValue() = default;
-  explicit StochasticDatedValue(double d, double v) : date_law("DET"), date_params({d}), value_law("DET"), value_params({v}) { }
+  explicit StochasticDatedValue(double d, double v)
+      : date_law("DET"), date_params({d}), value_law("DET"), value_params({v})
+  {
+  }
+
 private:
   double draw(std::string law, std::vector<double> params);
 };

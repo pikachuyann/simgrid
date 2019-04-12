@@ -10,26 +10,34 @@ namespace simgrid {
 namespace kernel {
 namespace profile {
 
-double StochasticDatedValue::draw(std::string law, std::vector<double> params) {
-        if (law=="DET" || law=="DETERMINISTIC") {
-                return params[0];
-        } else if (law=="EXP") {
-                return simgrid::statmc::rng::Exp(params[0]);
-        } else if (law=="UNIF") {
-				return simgrid::statmc::rng::Unif(params[0],params[1]);
-		} else {
-                xbt_assert(false,"Unimplemented law %s",law.c_str());
-        }
+double StochasticDatedValue::draw(std::string law, std::vector<double> params)
+{
+  if (law == "DET" || law == "DETERMINISTIC") {
+    return params[0];
+  } else if (law == "EXP") {
+    return simgrid::statmc::rng::Exp(params[0]);
+  } else if (law == "UNIF") {
+    return simgrid::statmc::rng::Unif(params[0], params[1]);
+  } else {
+    xbt_assert(false, "Unimplemented law %s", law.c_str());
+  }
 }
-double StochasticDatedValue::get_value() { return draw(value_law,value_params); }
-double StochasticDatedValue::get_date() { return draw(date_law,date_params); }
-DatedValue StochasticDatedValue::get_datedvalue() {
-        DatedValue event;
-        event.date_ = get_date();
-        event.value_ = get_value();
-        return event;
+double StochasticDatedValue::get_value()
+{
+  return draw(value_law, value_params);
 }
-	
+double StochasticDatedValue::get_date()
+{
+  return draw(date_law, date_params);
+}
+DatedValue StochasticDatedValue::get_datedvalue()
+{
+  DatedValue event;
+  event.date_  = get_date();
+  event.value_ = get_value();
+  return event;
+}
+
 } // namespace profile
 } // namespace kernel
 } // namespace simgrid
