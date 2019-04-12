@@ -5,6 +5,10 @@
 
 #include "src/kernel/resource/profile/StochasticDatedValue.hpp"
 
+namespace simgrid {
+namespace kernel {
+namespace profile {
+
 double StochasticDatedValue::draw(std::string law, std::vector<double> params) {
         if (law=="DET" || law=="DETERMINISTIC") {
                 return params[0];
@@ -22,3 +26,7 @@ DatedValue StochasticDatedValue::get_datedvalue() {
         event.value_ = get_value();
         return event;
 }
+	
+} // namespace profile
+} // namespace kernel
+} // namespace simgrid

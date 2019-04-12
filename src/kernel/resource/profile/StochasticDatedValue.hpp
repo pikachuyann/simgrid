@@ -8,6 +8,10 @@
 #include "src/kernel/resource/profile/DatedValue.hpp"
 #include <vector>
 
+namespace simgrid {
+namespace kernel {
+namespace profile {
+
 class DatedValue;
 class StochasticDatedValue {
 public:
@@ -23,5 +27,9 @@ public:
 private:
   double draw(std::string law, std::vector<double> params);
 };
+
+} // namespace profile
+} // namespace kernel
+} // namespace simgrid
 
 #endif
