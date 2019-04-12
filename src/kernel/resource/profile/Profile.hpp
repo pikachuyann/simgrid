@@ -42,9 +42,13 @@ public:
   static Profile* from_string(const std::string& name, const std::string& input, double periodicity);
   // private:
   std::vector<DatedValue> event_list;
+  std::vector<StochasticDatedValue> stochastic_event_list;
 
 private:
   FutureEvtSet* fes_ = nullptr;
+  bool stochastic = false;
+  bool stochasticloop = false;
+  DatedValue futureDV;
 };
 
 } // namespace profile
