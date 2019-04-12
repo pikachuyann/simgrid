@@ -14,13 +14,13 @@ double StochasticDatedValue::draw(std::string law, std::vector<double> params) {
         if (law=="DET" || law=="DETERMINISTIC") {
                 return params[0];
         } else if (law=="EXP") {
-                simgrid::statmc::rng::Exp(params[0]);
+                return simgrid::statmc::rng::Exp(params[0]);
         } else {
                 xbt_assert(false,"Unimplemented law %s",law.c_str());
         }
 }
-double StochasticDatedValue::get_value() { draw(value_law,value_params); }
-double StochasticDatedValue::get_date() { draw(date_law,date_params); }
+double StochasticDatedValue::get_value() { return draw(value_law,value_params); }
+double StochasticDatedValue::get_date() { return draw(date_law,date_params); }
 DatedValue StochasticDatedValue::get_datedvalue() {
         DatedValue event;
         event.date_ = get_date();
