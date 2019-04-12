@@ -20,6 +20,7 @@
 #include "src/surf/network_interface.hpp"
 #include "surf/surf.hpp" // routing_platf. FIXME:KILLME. SOON
 #include <simgrid/Exception.hpp>
+#include "src/statmc/rng.hpp"
 
 #include <string>
 
@@ -372,6 +373,10 @@ bool Engine::is_initialized()
 void Engine::set_config(const std::string& str)
 {
   config::set_parse(str);
+}
+	
+void Engine::statmc_mersenne_seed(int seed) {
+	simgrid::statmc::rng::SetMersenneSeed(seed);
 }
 } // namespace s4u
 } // namespace simgrid

@@ -154,6 +154,8 @@ public:
    */
   void set_config(const std::string& str);
 
+  void statmc_mersenne_seed(int seed);
+
 private:
   kernel::EngineImpl* const pimpl;
   static Engine* instance_;
