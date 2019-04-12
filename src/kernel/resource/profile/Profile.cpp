@@ -99,6 +99,8 @@ Profile* Profile::from_string(const std::string& name, const std::string& input,
   // We define two buffer values that will serve to parse the various distribution law.
   char tmpA[50];
   char tmpB[50];
+  double tmpC;
+  double tmpD;
   // I am pretty much certain it is not the best solution. Also, the two following regexp may be used:
   std::regex stochasticloop_regexp("STOCHASTICLOOP", std::regex_constants::ECMAScript | std::regex_constants::icase);
   std::regex stochastic_regexp("STOCHASTIC", std::regex_constants::ECMAScript | std::regex_constants::icase);
@@ -148,6 +150,18 @@ Profile* Profile::from_string(const std::string& name, const std::string& input,
 	  else if (sscanf(val.c_str(), "%s %lg %s %lg\n", &tmpA[0], &event.date_, &tmpB[0], &event.value_) == 4) {
 	    stochevent.date_law=tmpA; stochevent.date_params={event.date_};
 		stochevent.value_law=tmpB; stochevent.value_params={event.value_};
+	  }
+	  else if (sscanf(val.c_str(), "%s %lg %lg %s %lg\n", &tmpA[0], &event.date_, &tmpC, &tmpB[0], &event.value_) == 5) {
+	    stochevent.date_law=tmpA; stochevent.date_params={event.date_,tmpC};
+		stochevent.value_law=tmpB; stochevent.value_params={event.value_};
+	  }
+	  else if (sscanf(val.c_str(), "%s %lg %s %lg %lg\n", &tmpA[0], &event.date_, &tmpB[0], &event.value_, &tmpD) == 5) {
+	    stochevent.date_law=tmpA; stochevent.date_params={event.date_};
+		stochevent.value_law=tmpB; stochevent.value_params={event.value_,tmpD};
+	  }
+	  else if (sscanf(val.c_str(), "%s %lg %lg %s %lg %lg\n", &tmpA[0], &event.date_, &tmpC, &tmpB[0], &event.value_, &tmpD) == 6) {
+	    stochevent.date_law=tmpA; stochevent.date_params={event.date_,tmpC};
+		stochevent.value_law=tmpB; stochevent.value_params={event.value_,tmpD};
 	  }
 	  else {
 	    // ToDo: A more general approach for parsing STRA v1 v2 v3 v4 v5 STRB v6 v7 v8 values
