@@ -11,6 +11,7 @@ namespace rng {
 	void UseMersenneTwister();
 	void UseRngStream();
 	void UseRngStream(std::string);
+	void SetMersenneSeed(int);
 	double Exp(double);
 }
 }

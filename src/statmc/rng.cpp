@@ -32,6 +32,9 @@ namespace rng {
 		currentrng=RNG_RngStream;
 		rngstream=RngStream_CreateStream(name.c_str());
 	} // The use of c_str is required there because RngStream is a C library using char*, and will convert the C++ string to a char*.
+	void SetMersenneSeed(int seed) {
+		mt19937_rng.seed(seed);
+	}
 	
 	double Exp(double lambda) {
 		switch (currentrng) {
