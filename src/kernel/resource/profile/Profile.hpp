@@ -7,6 +7,7 @@
 #define PROFILE_HPP
 
 #include "src/kernel/resource/profile/DatedValue.hpp"
+#include "src/kernel/resource/profile/StochasticDatedValue.hpp"
 #include "src/kernel/resource/profile/FutureEvtSet.hpp"
 #include <vector>
 #include <queue>

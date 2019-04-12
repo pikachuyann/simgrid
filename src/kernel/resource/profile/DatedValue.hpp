@@ -3,6 +3,9 @@
 /* This program is free software; you can redistribute it and/or modify it
  * under the terms of the license (GNU LGPL) which comes with this package. */
 
+#ifndef DATEDVALUE_HPP
+#define DATEDVALUE_HPP
+
 #include <iostream>
 
 namespace simgrid {
@@ -33,3 +36,5 @@ std::ostream& operator<<(std::ostream& out, const DatedValue& e);
 } // namespace profile
 } // namespace kernel
 } // namespace simgrid
+
+#endif
