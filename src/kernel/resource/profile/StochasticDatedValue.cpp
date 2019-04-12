@@ -4,6 +4,7 @@
  * under the terms of the license (GNU LGPL) which comes with this package. */
 
 #include "src/kernel/resource/profile/StochasticDatedValue.hpp"
+#include "src/statmc/rng.hpp"
 
 namespace simgrid {
 namespace kernel {
@@ -13,7 +14,7 @@ double StochasticDatedValue::draw(std::string law, std::vector<double> params) {
         if (law=="DET" || law=="DETERMINISTIC") {
                 return params[0];
         } else if (law=="EXP") {
-                simgrid::statmc::rng::Expo(params[0]);
+                simgrid::statmc::rng::Exp(params[0]);
         } else {
                 xbt_assert(false,"Unimplemented law %s",law.c_str());
         }
