@@ -7,6 +7,7 @@
 #include <xbt/RngStream.h>
 #include "xbt/asserts.h"
 #include "src/statmc/rng.hpp"
+#include <cstring>
 
 /*
  * This is currently a work in progress; the goal is to catch every
@@ -24,6 +25,13 @@ namespace rng {
 	boost::random::mt19937 mt19937_rng;
 	RngStream rngstream;
 	ChosenMethod currentrng = RNG_MersenneTwister;
+	
+	void UseMersenneTwister() { currentrng = RNG_MersenneTwister; }
+	void UseRngStream() { currentrng = RNG_RngStream; }
+	void UseRngStream(std::string name) {
+		currentrng=RNG_RngStream;
+		rngstream=RngStream_CreateStream(name.c_str());
+	} // The use of c_str is required there because RngStream is a C library using char*, and will convert the C++ string to a char*.
 	
 	double Exp(double lambda) {
 		switch (currentrng) {
