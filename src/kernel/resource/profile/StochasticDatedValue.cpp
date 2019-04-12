@@ -15,7 +15,9 @@ double StochasticDatedValue::draw(std::string law, std::vector<double> params) {
                 return params[0];
         } else if (law=="EXP") {
                 return simgrid::statmc::rng::Exp(params[0]);
-        } else {
+        } else if (law=="UNIF") {
+				return simgrid::statmc::rng::Unif(params[0],params[1]);
+		} else {
                 xbt_assert(false,"Unimplemented law %s",law.c_str());
         }
 }
