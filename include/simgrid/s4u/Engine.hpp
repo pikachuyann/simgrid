@@ -36,6 +36,10 @@ public:
   /** Finalize the default engine and all its dependencies */
   static void shutdown();
 
+  /** @brief Run the simulation a set number of times, for statistical purposes (i.e. with a probabilistic model) **/
+  void statmc_multirun(int);
+  void statmc_multirun(int, const std::string& deploy);
+
   /** @brief Run the simulation */
   void run();
 
@@ -154,6 +158,7 @@ public:
    */
   void set_config(const std::string& str);
 
+  /** @brief Set the seed of the Mersenne-Twister number generator (if used, in the case of probabilistic models **/
   void statmc_mersenne_seed(int seed);
 
 private:

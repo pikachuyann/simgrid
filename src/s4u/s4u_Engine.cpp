@@ -18,6 +18,7 @@
 #include "src/kernel/EngineImpl.hpp"
 #include "src/simix/smx_private.hpp" // For access to simix_global->process_list
 #include "src/statmc/rng.hpp"
+#include "src/statmc/statmc.hpp"
 #include "src/surf/network_interface.hpp"
 #include "surf/surf.hpp" // routing_platf. FIXME:KILLME. SOON
 #include <simgrid/Exception.hpp>
@@ -287,6 +288,19 @@ std::vector<ActorPtr> Engine::get_filtered_actors(const std::function<bool(Actor
       actor_list.push_back(kv.second->iface());
   }
   return actor_list;
+}
+
+void Engine::statmc_multirun(int nbruns)
+{
+  fflush(stdout);
+  fflush(stderr);
+  simgrid::statmc::multirun(nbruns);
+}
+void Engine::statmc_multirun(int nbruns, const std::string& deploy)
+{
+  fflush(stdout);
+  fflush(stderr);
+  simgrid::statmc::multirun(nbruns, deploy);
 }
 
 void Engine::run()
