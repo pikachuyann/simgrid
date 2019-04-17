@@ -5,6 +5,7 @@
 
 #ifndef STATMC_HPP
 #define STATMC_HPP
+#include <ostream>
 
 namespace simgrid {
 namespace statmc {
