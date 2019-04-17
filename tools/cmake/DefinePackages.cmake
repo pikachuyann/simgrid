@@ -572,6 +572,7 @@ set(JEDULE_SRC
 
 set(STATMC_SRC
   src/statmc/rng.cpp
+  src/statmc/statmc.cpp
 )
 
 set(MC_SRC_BASE
