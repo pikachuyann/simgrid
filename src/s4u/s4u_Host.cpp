@@ -82,6 +82,12 @@ Host* Host::current()
   return self->get_host();
 }
 
+void Host::reinit()
+{
+  Engine::get_instance()->host_register(name_, this);
+  new surf::HostImpl(this);
+}
+
 void Host::turn_on()
 {
   if (not is_on()) {

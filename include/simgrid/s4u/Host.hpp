@@ -80,6 +80,8 @@ public:
   int get_actor_count();
   std::vector<ActorPtr> get_all_actors();
 
+  void reinit(); // Reinitialise the host when restarting a simulation.
+
   /** Turns that host on if it was previously off
    *
    * This call does nothing if the host is already on. If it was off, all actors which were marked 'autorestart' on that
