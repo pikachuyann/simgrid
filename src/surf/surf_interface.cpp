@@ -304,6 +304,11 @@ void surf_init(int *argc, char **argv)
     MC_memory_init();
 }
 
+void surf_reinit()
+{
+  NOW = 0;
+}
+
 void surf_exit()
 {
   simgrid::s4u::Engine::shutdown();

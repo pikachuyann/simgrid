@@ -42,6 +42,11 @@ XBT_PUBLIC_DATA simgrid::surf::HostModel* surf_host_model;
 XBT_PUBLIC void surf_init(int* argc, char** argv); /* initialize common structures */
 
 /** @ingroup SURF_simulation
+ *  @brief Reinitialize SURF after a simulation, in the case of simulations with probabilistic features.
+ */
+XBT_PUBLIC void surf_reinit();
+
+/** @ingroup SURF_simulation
  *  @brief Finish simulation initialization
  *
  *  This function must be called before the first call to surf_solve()
