@@ -203,6 +203,49 @@ void SIMIX_set_maestro(void (*code)(void*), void* data)
 
 /**
  * @ingroup SIMIX_API
+ * @brief Reinitialize the internal data, to run a new simulation with mostly same parameters
+ */
+void SIMIX_reinit()
+{
+  simix_global->maestro_process->kill_all();
+  SIMIX_context_runall();
+  simix_global->empty_trash();
+
+  /*
+// Exit the SIMIX network module
+SIMIX_mailbox_exit();
+
+while (not simgrid::simix::simix_timers.empty()) {
+delete simgrid::simix::simix_timers.top().second;
+simgrid::simix::simix_timers.pop();
+}
+// Free the remaining data structures
+simix_global->actors_to_run.clear();
+simix_global->actors_that_ran.clear();
+simix_global->actors_to_destroy.clear();
+simix_global->process_list.clear();
+
+#if SIMGRID_HAVE_MC
+xbt_dynar_free(&simix_global->actors_vector);
+xbt_dynar_free(&simix_global->dead_actors_vector);
+#endif
+
+  // Reinitialize maestro:
+  simix_global->maestro_process = nullptr;
+  simgrid::kernel::actor::create_maestro(maestro_code);
+  */
+
+  surf_reinit();
+  sg_platf_init();
+
+  std::vector<simgrid::s4u::Host*> list = simgrid::s4u::Engine::get_instance()->get_all_hosts();
+  for (auto const& host : list) {
+    host->reinit();
+  }
+}
+
+/**
+ * @ingroup SIMIX_API
  * @brief Initialize SIMIX internal data.
  */
 void SIMIX_global_init(int *argc, char **argv)

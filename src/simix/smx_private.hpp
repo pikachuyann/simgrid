@@ -74,5 +74,6 @@ public:
 XBT_PUBLIC_DATA std::unique_ptr<simgrid::simix::Global> simix_global;
 
 XBT_PUBLIC void SIMIX_clean();
+XBT_PUBLIC void SIMIX_reinit();
 
 #endif
