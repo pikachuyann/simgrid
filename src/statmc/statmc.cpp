@@ -9,6 +9,9 @@
 #include "src/simix/smx_private.hpp"
 #include <ostream>
 
+XBT_LOG_NEW_CATEGORY(statmc, "Log channels of the statistical model-checking module");
+XBT_LOG_NEW_DEFAULT_SUBCATEGORY(statmc_main, statmc, "Logging specific to the statistical model-checking module");
+
 namespace simgrid {
 namespace statmc {
 
@@ -21,7 +24,7 @@ void multirun(int nbruns)
     }
     SIMIX_run();
     simulationEndTime = SIMIX_get_clock();
-    printf("(Debug): Ending time (for run %i) was %f.\n", i, simulationEndTime);
+    XBT_CINFO(statmc, "Ending time (for run %i) was %f.", i, simulationEndTime);
   }
 }
 
@@ -35,7 +38,7 @@ void multirun(int nbruns, const std::string& deploy)
     SIMIX_launch_application(deploy);
     SIMIX_run();
     simulationEndTime = SIMIX_get_clock();
-    printf("(Debug): Ending time (for run %i) was %f.\n", i, simulationEndTime);
+    XBT_CINFO(statmc, "Ending time (for run %i) was %f.", i, simulationEndTime);
   }
 }
 
