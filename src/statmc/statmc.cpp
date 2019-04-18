@@ -17,15 +17,17 @@ namespace statmc {
 
 void multirun(int nbruns)
 {
-  double simulationEndTime = 0.0;
-  for (int i = 0; i < nbruns; i++) {
-    if (i > 0) {
-      SIMIX_reinit();
-    }
-    SIMIX_run();
-    simulationEndTime = SIMIX_get_clock();
-    XBT_CINFO(statmc, "Ending time (for run %i) was %f.", i, simulationEndTime);
-  }
+  XBT_CCRITICAL(statmc, "It is not currently possible to multi-run a simulation without reloading the deployment file "
+                        "at each simulation. Please provide a deployment file while using multirun.");
+  /*  double simulationEndTime = 0.0;
+    for (int i = 0; i < nbruns; i++) {
+      if (i > 0) {
+        SIMIX_reinit();
+      }
+      SIMIX_run();
+      simulationEndTime = SIMIX_get_clock();
+      XBT_CINFO(statmc, "Ending time (for run %i) was %f.", i, simulationEndTime);
+    } */
 }
 
 void multirun(int nbruns, const std::string& deploy)
