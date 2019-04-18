@@ -48,6 +48,8 @@ const char* xbt_ex_catname(xbt_errcat_t cat)
       return "system error";
     case network_error:
       return "network error";
+    case simulation_timeout_error:
+      return "simulation timeout";
     case timeout_error:
       return "timeout";
     case cancel_error:

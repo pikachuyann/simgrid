@@ -115,6 +115,19 @@ public:
 
 namespace simgrid {
 
+/** Exception raised when a simulation timeout is reached
+ *  The rationale behind this exception is, in the case of models with probabilistic features, we might raise an
+ *  undesired livelock. A solution when performing statistical model-checking is to give a maximum simulation time,
+ *  in which case the SimulationTimeoutError exception is thrown and caught by the statistical model-checking module. */
+class SimulationTimeoutError : public xbt_ex {
+public:
+  SimulationTimeoutError(simgrid::xbt::ThrowPoint&& throwpoint, std::string&& message)
+      : xbt_ex(std::move(throwpoint), std::move(message))
+  {
+    category = simulation_timeout_error;
+  }
+};
+
 /** Exception raised when a timeout elapsed */
 class TimeoutError : public xbt_ex {
 public:

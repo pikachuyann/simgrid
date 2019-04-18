@@ -29,20 +29,21 @@
  *  @ingroup XBT_ex_c
  */
 typedef enum {
-  unknown_error = 0,            /**< unknown error */
-  arg_error,                    /**< Invalid argument */
-  bound_error,                  /**< Out of bounds argument */
-  mismatch_error,               /**< The provided ID does not match */
-  not_found_error,              /**< The searched element was not found */
-  system_error,                 /**< a syscall did fail */
-  network_error,                /**< error while sending/receiving data */
-  timeout_error,                /**< not quick enough, dude */
-  cancel_error,                 /**< an action was canceled */
-  thread_error,                 /**< error while [un]locking */
-  host_error,                   /**< host failed */
-  tracing_error,                /**< error during the simulation tracing */
-  io_error,                     /**< disk or file error */
-  vm_error                      /**< vm  error */
+  unknown_error = 0,        /**< unknown error */
+  arg_error,                /**< Invalid argument */
+  bound_error,              /**< Out of bounds argument */
+  mismatch_error,           /**< The provided ID does not match */
+  not_found_error,          /**< The searched element was not found */
+  system_error,             /**< a syscall did fail */
+  network_error,            /**< error while sending/receiving data */
+  simulation_timeout_error, /**< we probably reached a livelock... */
+  timeout_error,            /**< not quick enough, dude */
+  cancel_error,             /**< an action was canceled */
+  thread_error,             /**< error while [un]locking */
+  host_error,               /**< host failed */
+  tracing_error,            /**< error during the simulation tracing */
+  io_error,                 /**< disk or file error */
+  vm_error                  /**< vm  error */
 } xbt_errcat_t;
 
 SG_BEGIN_DECL()
