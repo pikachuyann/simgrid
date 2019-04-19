@@ -39,6 +39,7 @@ public:
   /** @brief Run the simulation a set number of times, for statistical purposes (i.e. with a probabilistic model) **/
   void statmc_multirun(int);
   void statmc_multirun(int, const std::string& deploy);
+  void statmc_multirun(int, const std::string& deploy, double simtimeout);
 
   /** @brief Run the simulation */
   void run();

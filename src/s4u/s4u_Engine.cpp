@@ -302,6 +302,12 @@ void Engine::statmc_multirun(int nbruns, const std::string& deploy)
   fflush(stderr);
   simgrid::statmc::multirun(nbruns, deploy);
 }
+void Engine::statmc_multirun(int nbruns, const std::string& deploy, double simtimeout)
+{
+  fflush(stdout);
+  fflush(stderr);
+  simgrid::statmc::multirun(nbruns, deploy, simtimeout);
+}
 
 void Engine::run()
 {
