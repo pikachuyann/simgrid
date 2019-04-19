@@ -425,6 +425,7 @@ static bool SIMIX_execute_timers()
  */
 void SIMIX_run()
 {
+  bool simulationTimeouted = false;
   if (not MC_record_path.empty()) {
     simgrid::mc::replay(MC_record_path);
     return;
@@ -445,9 +446,9 @@ void SIMIX_run()
 #endif
     }
     if (simgrid::simix::simulationTimeoutDelay >= 0.0 && surf_get_clock() >= simgrid::simix::simulationTimeoutDelay) {
-      std::rethrow_exception(std::make_exception_ptr(simgrid::SimulationTimeoutError(
-          XBT_THROW_POINT,
-          "Simulation has timeouted, this should be catched by the statistical model-checker module.")));
+      // We have reached the simulation time, so we have to clean up things forcefully.
+      simix_global->maestro_process->kill_all();
+      simulationTimeouted = true;
     }
 
     simix_global->execute_tasks();
@@ -566,6 +567,11 @@ void SIMIX_run()
               simix_global->actors_to_run.size());
 
   } while (time > -1.0 || not simix_global->actors_to_run.empty());
+
+  if (simulationTimeouted) {
+    std::rethrow_exception(std::make_exception_ptr(simgrid::SimulationTimeoutError(
+        XBT_THROW_POINT, "Simulation has timeouted, this should be catched by the statistical model-checker module.")));
+  }
 
   if (not simix_global->process_list.empty()) {
 
