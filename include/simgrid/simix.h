@@ -76,6 +76,9 @@ XBT_PUBLIC int SIMIX_is_maestro();
 /* Initialization and exit */
 XBT_PUBLIC void SIMIX_global_init(int* argc, char** argv);
 
+/* Set a simulation timeout that can be catched by another module or the user without using UNIX signals */
+XBT_PUBLIC void SIMIX_set_simulationtimeout(double);
+
 /* Set to execute in the maestro
  *
  * If no maestro code is registered (the default), the main thread

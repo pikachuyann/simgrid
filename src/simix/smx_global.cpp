@@ -20,6 +20,8 @@
 #include "src/surf/StorageImpl.hpp"
 #include "src/surf/xml/platf.hpp"
 
+#include "simgrid/Exception.hpp"
+
 #if SIMGRID_HAVE_MC
 #include "src/mc/remote/Client.hpp"
 #endif
@@ -189,7 +191,13 @@ void Global::run_all_actors()
 
 simgrid::config::Flag<double> breakpoint{"simix/breakpoint",
                                          "When non-negative, raise a SIGTRAP after given (simulated) time", -1.0};
+double simulationTimeoutDelay = -1.0;
 }
+}
+
+void SIMIX_set_simulationtimeout(double time)
+{
+  simgrid::simix::simulationTimeoutDelay = time;
 }
 
 static simgrid::simix::ActorCode maestro_code;
@@ -435,6 +443,11 @@ void SIMIX_run()
 #else
       std::raise(SIGABRT);
 #endif
+    }
+    if (simgrid::simix::simulationTimeoutDelay >= 0.0 && surf_get_clock() >= simgrid::simix::simulationTimeoutDelay) {
+      std::rethrow_exception(std::make_exception_ptr(simgrid::SimulationTimeoutError(
+          XBT_THROW_POINT,
+          "Simulation has timeouted, this should be catched by the statistical model-checker module.")));
     }
 
     simix_global->execute_tasks();
