@@ -11,6 +11,7 @@ namespace simgrid {
 namespace statmc {
 void multirun(int);
 void multirun(int, const std::string&);
+void multirun(int, const std::string&, double);
 } // namespace statmc
 } // namespace simgrid
 #endif

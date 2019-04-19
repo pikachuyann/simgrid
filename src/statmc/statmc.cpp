@@ -4,6 +4,7 @@
  * under the terms of the license (GNU LGPL) which comes with this package. */
 
 #include "src/statmc/statmc.hpp"
+#include "simgrid/Exception.hpp"
 #include "simgrid/s4u/Engine.hpp"
 #include "simgrid/simix.h"
 #include "src/simix/smx_private.hpp"
@@ -32,16 +33,33 @@ void multirun(int nbruns)
 
 void multirun(int nbruns, const std::string& deploy)
 {
+  multirun(nbruns, deploy, 2000000.0);
+}
+
+void multirun(int nbruns, const std::string& deploy, double singlesimto)
+{
+  SIMIX_set_simulationtimeout(singlesimto);
   double simulationEndTime = 0.0;
+  double averageEndTime    = 0.0;
+  int timeouts             = 0;
+  int completed            = 0;
   for (int i = 0; i < nbruns; i++) {
     if (i > 0) {
       SIMIX_reinit();
     }
     SIMIX_launch_application(deploy);
-    SIMIX_run();
-    simulationEndTime = SIMIX_get_clock();
-    XBT_CINFO(statmc, "Ending time (for run %i) was %f.", i, simulationEndTime);
+    try {
+      SIMIX_run();
+      simulationEndTime = SIMIX_get_clock();
+      completed += 1;
+      XBT_CINFO(statmc, "Ending time (for run %i) was %f.", i, simulationEndTime);
+      averageEndTime = averageEndTime * completed / (completed + 1) + simulationEndTime / (completed + 1);
+    } catch (simgrid::SimulationTimeoutError& ex) {
+      timeouts++;
+    }
   }
+  printf("The average simulation time for completed runs was %f, there was %i completed runs out of %i.",
+         averageEndTime, completed, nbruns);
 }
 
 } // namespace statmc
