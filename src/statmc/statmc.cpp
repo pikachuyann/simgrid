@@ -69,9 +69,9 @@ void multirun(int nbruns, const std::string& deploy, double singlesimto)
            "; %f]",
            i, nbruns, timeouts, averageEndTime, lowestEndTime, highestEndTime);
   }
-  printf("The average simulation time for completed runs was %f, there was %i completed runs out of %i.\n",
+  printf("\n\nThe average simulation time for completed runs was %f, there was %i completed runs out of %i.\n",
          averageEndTime, completed, nbruns);
-  printf("The simulation times for completed runs ranged from %f to %f", lowestEndTime, highestEndTime);
+  printf("The simulation times for completed runs ranged from %f to %f\n", lowestEndTime, highestEndTime);
 }
 
 } // namespace statmc
