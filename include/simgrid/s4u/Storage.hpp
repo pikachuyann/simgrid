@@ -56,8 +56,8 @@ public:
   Host* get_host() { return attached_to_; };
   void set_host(Host* host) { attached_to_ = host; }
 
-  std::unordered_map<std::string, std::string>* get_properties();
-  const char* get_property(const std::string& key);
+  const std::unordered_map<std::string, std::string>* get_properties() const;
+  const char* get_property(const std::string& key) const;
   void set_property(const std::string&, const std::string& value);
 
   void set_data(void* data) { userdata_ = data; }
@@ -70,7 +70,7 @@ public:
 
   IoPtr write_async(sg_size_t size);
   sg_size_t write(sg_size_t size);
-  kernel::resource::StorageImpl* get_impl() { return pimpl_; }
+  kernel::resource::StorageImpl* get_impl() const { return pimpl_; }
 
 private:
   Host* attached_to_ = nullptr;

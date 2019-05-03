@@ -8,6 +8,7 @@
 #include "smpi_datatype.hpp"
 #include "smpi_request.hpp"
 #include "smpi_win.hpp"
+#include "smpi_info.hpp"
 #include "src/smpi/include/smpi_actor.hpp"
 #include "src/surf/HostImpl.hpp"
 
@@ -37,6 +38,7 @@ Comm::Comm(MPI_Group group, MPI_Topology topo, int smp) : group_(group), topo_(t
   non_uniform_map_ = nullptr;
   leaders_map_     = nullptr;
   is_blocked_      = 0;
+  info_            = MPI_INFO_NULL;
 }
 
 void Comm::destroy(Comm* comm)
@@ -88,6 +90,23 @@ int Comm::dup(MPI_Comm* newcomm){
       }
     }
   }
+  //duplicate info if present
+  if(info_!=MPI_INFO_NULL)
+    (*newcomm)->info_ = new simgrid::smpi::Info(info_);
+  return ret;
+}
+
+int Comm::dup_with_info(MPI_Info info, MPI_Comm* newcomm){
+  int ret = dup(newcomm);
+  if(ret != MPI_SUCCESS)
+    return ret;
+  if((*newcomm)->info_!=MPI_INFO_NULL){
+    simgrid::smpi::Info::unref((*newcomm)->info_);
+    (*newcomm)->info_=MPI_INFO_NULL;
+  }
+  if(info != MPI_INFO_NULL){
+    (*newcomm)->info_=info;
+  }
   return ret;
 }
 
@@ -129,7 +148,7 @@ void Comm::get_name (char* name, int* len)
   }
 }
 
-void Comm::set_name (char* name)
+void Comm::set_name (const char* name)
 {
   if (this == MPI_COMM_UNINITIALIZED){
     smpi_process()->comm_world()->set_name(name);
@@ -298,27 +317,7 @@ void Comm::unref(Comm* comm){
   }
 }
 
-void Comm::init_smp(){
-  int leader = -1;
-
-  if (this == MPI_COMM_UNINITIALIZED)
-    smpi_process()->comm_world()->init_smp();
-
-  int comm_size = this->size();
-
-  // If we are in replay - perform an ugly hack
-  // tell SimGrid we are not in replay for a while, because we need the buffers to be copied for the following calls
-  bool replaying = false; //cache data to set it back again after
-  if(smpi_process()->replaying()){
-    replaying = true;
-    smpi_process()->set_replaying(false);
-  }
-
-  if (smpi_privatize_global_variables == SmpiPrivStrategies::MMAP) {
-    // we need to switch as the called function may silently touch global variables
-    smpi_switch_data_segment(s4u::Actor::self());
-  }
-  //identify neighbours in comm
+MPI_Comm Comm::find_intra_comm(int * leader){
   //get the indices of all processes sharing the same simix host
   auto& process_list      = sg_host_self()->pimpl_->process_list_;
   int intra_comm_size     = 0;
@@ -340,9 +339,33 @@ void Comm::init_smp(){
       i++;
     }
   }
+  *leader=min_index;
+  return new  Comm(group_intra, nullptr, 1);
+}
 
-  MPI_Comm comm_intra = new  Comm(group_intra, nullptr, 1);
-  leader=min_index;
+void Comm::init_smp(){
+  int leader = -1;
+  int i = 0;
+  if (this == MPI_COMM_UNINITIALIZED)
+    smpi_process()->comm_world()->init_smp();
+
+  int comm_size = this->size();
+
+  // If we are in replay - perform an ugly hack
+  // tell SimGrid we are not in replay for a while, because we need the buffers to be copied for the following calls
+  bool replaying = false; //cache data to set it back again after
+  if(smpi_process()->replaying()){
+    replaying = true;
+    smpi_process()->set_replaying(false);
+  }
+
+  if (smpi_privatize_global_variables == SmpiPrivStrategies::MMAP) {
+    // we need to switch as the called function may silently touch global variables
+    smpi_switch_data_segment(s4u::Actor::self());
+  }
+  //identify neighbours in comm
+  MPI_Comm comm_intra = find_intra_comm(&leader);
+
 
   int* leaders_map = new int[comm_size];
   int* leader_list = new int[comm_size];
@@ -503,15 +526,33 @@ void Comm::finish_rma_calls(){
   }
 }
 
-MPI_Comm Comm::split_type(int type, int key, MPI_Info info)
+MPI_Info Comm::info(){
+  if(info_== MPI_INFO_NULL)
+    info_ = new Info();
+  info_->ref();
+  return info_;
+}
+
+void Comm::set_info(MPI_Info info){
+  if(info_!= MPI_INFO_NULL)
+    info->ref();
+  info_=info;
+}
+
+MPI_Comm Comm::split_type(int type, int /*key*/, MPI_Info)
 {
-  if(type != MPI_COMM_TYPE_SHARED){
+  //MPI_UNDEFINED can be given to some nodes... but we need them to still perform the smp part which is collective
+  if(type != MPI_COMM_TYPE_SHARED && type != MPI_UNDEFINED){
     return MPI_COMM_NULL;
   }
-  this->init_smp();
-  this->ref();
-  this->get_intra_comm()->ref();
-  return this->get_intra_comm();
+  int leader=0;
+  MPI_Comm res= this->find_intra_comm(&leader);
+  if(type != MPI_UNDEFINED)
+    return res;
+  else{
+    Comm::destroy(res);
+    return MPI_COMM_NULL;
+  }
 }
 
 } // namespace smpi

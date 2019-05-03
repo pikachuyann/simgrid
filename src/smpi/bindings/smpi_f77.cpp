@@ -107,6 +107,8 @@ void mpi_initialized_(int* flag, int* ierr){
 }
 
 void mpi_get_processor_name_(char *name, int *resultlen, int* ierr){
+  //fortran does not handle string endings cleanly, so initialize everything before
+  memset(name, 0, MPI_MAX_PROCESSOR_NAME);
   *ierr = MPI_Get_processor_name(name, resultlen);
 }
 
@@ -849,19 +851,19 @@ void mpi_status_set_elements_ ( MPI_Status* status, int* datatype, int* count, i
 }
 
 void mpi_publish_name_ ( char *service_name, int* info, char *port_name, int* ierr){
- *ierr = MPI_Publish_name( service_name, *reinterpret_cast<MPI_Info*>(info), port_name);
+ *ierr = MPI_Publish_name( service_name, simgrid::smpi::Info::f2c(*info), port_name);
 }
 
 void mpi_unpublish_name_ ( char *service_name, int* info, char *port_name, int* ierr){
- *ierr = MPI_Unpublish_name( service_name, *reinterpret_cast<MPI_Info*>(info), port_name);
+ *ierr = MPI_Unpublish_name( service_name, simgrid::smpi::Info::f2c(*info), port_name);
 }
 
 void mpi_lookup_name_ ( char *service_name, int* info, char *port_name, int* ierr){
- *ierr = MPI_Lookup_name( service_name, *reinterpret_cast<MPI_Info*>(info), port_name);
+ *ierr = MPI_Lookup_name( service_name, simgrid::smpi::Info::f2c(*info), port_name);
 }
 
 void mpi_open_port_ ( int* info, char *port_name, int* ierr){
- *ierr = MPI_Open_port( *reinterpret_cast<MPI_Info*>(info),port_name);
+ *ierr = MPI_Open_port( simgrid::smpi::Info::f2c(*info),port_name);
 }
 
 void mpi_close_port_ ( char *port_name, int* ierr){

@@ -47,12 +47,19 @@ constexpr int SMPI_RMA_TAG            = -6666;
 
 #define MPI_REQUEST_IGNORED ((MPI_Request*)-100)
 
+/* Bindings for MPI special values */
+extern XBT_PUBLIC int mpi_in_place_;
+extern XBT_PUBLIC int mpi_bottom_;
+extern XBT_PUBLIC int mpi_status_ignore_;
+extern XBT_PUBLIC int mpi_statuses_ignore_; 
 /* Convert between Fortran and C */
-
-#define FORT_BOTTOM(addr) ((*(int*)addr) == -200 ? MPI_BOTTOM : (void*)addr)
-#define FORT_IN_PLACE(addr) ((*(int*)addr) == -100 ? MPI_IN_PLACE : (void*)addr)
-#define FORT_STATUS_IGNORE(addr) (static_cast<MPI_Status*>((*(int*)addr) == -300 ? MPI_STATUS_IGNORE : (void*)addr))
-#define FORT_STATUSES_IGNORE(addr) (static_cast<MPI_Status*>((*(int*)addr) == -400 ? MPI_STATUSES_IGNORE : (void*)addr))
+#define FORT_ADDR(addr, val, val2)                                         \
+  (((void *)(addr) == (void*) &(val2))                  \
+   ? (val) : (void *)(addr))
+#define FORT_BOTTOM(addr)          FORT_ADDR(addr, MPI_BOTTOM, mpi_bottom_)
+#define FORT_IN_PLACE(addr)        FORT_ADDR(addr, MPI_IN_PLACE, mpi_in_place_)
+#define FORT_STATUS_IGNORE(addr)   static_cast<MPI_Status*>(FORT_ADDR(addr, MPI_STATUS_IGNORE, mpi_status_ignore_))
+#define FORT_STATUSES_IGNORE(addr) static_cast<MPI_Status*>(FORT_ADDR(addr, MPI_STATUSES_IGNORE, mpi_statuses_ignore_))
 
 extern XBT_PRIVATE MPI_Comm MPI_COMM_UNINITIALIZED;
 
@@ -105,9 +112,9 @@ XBT_PRIVATE void smpi_bench_begin();
 XBT_PRIVATE void smpi_bench_end();
 XBT_PRIVATE void smpi_shared_destroy();
 
-XBT_PRIVATE void* smpi_get_tmp_sendbuffer(int size);
-XBT_PRIVATE void* smpi_get_tmp_recvbuffer(int size);
-XBT_PRIVATE void smpi_free_tmp_buffer(void* buf);
+XBT_PRIVATE unsigned char* smpi_get_tmp_sendbuffer(size_t size);
+XBT_PRIVATE unsigned char* smpi_get_tmp_recvbuffer(size_t size);
+XBT_PRIVATE void smpi_free_tmp_buffer(const unsigned char* buf);
 XBT_PRIVATE void smpi_free_replay_tmp_buffers();
 
 extern "C" {

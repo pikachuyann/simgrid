@@ -7,6 +7,8 @@
 #include "simgrid/s4u/Actor.hpp"
 #include "simgrid/s4u/Engine.hpp"
 #include "simgrid/s4u/Exec.hpp"
+#include "simgrid/s4u/VirtualMachine.hpp"
+#include "src/plugins/vm/VirtualMachineImpl.hpp"
 #include "src/simix/smx_private.hpp"
 #include "src/surf/HostImpl.hpp"
 
@@ -104,6 +106,11 @@ void Host::turn_off()
 {
   if (is_on()) {
     simix::simcall([this] {
+      for (VirtualMachine* const& vm : vm::VirtualMachineImpl::allVms_)
+        if (vm->get_pm() == this) {
+          vm->shutdown();
+          vm->turn_off();
+        }
       this->pimpl_cpu->turn_off();
       this->pimpl_->turn_off();
 
@@ -171,9 +178,9 @@ void Host::route_to(Host* dest, std::vector<kernel::resource::LinkImpl*>& links,
 }
 
 /** Get the properties assigned to a host */
-std::unordered_map<std::string, std::string>* Host::get_properties()
+const std::unordered_map<std::string, std::string>* Host::get_properties() const
 {
-  return simix::simcall([this] { return this->pimpl_->get_properties(); });
+  return this->pimpl_->get_properties();
 }
 
 /** Retrieve the property value (or nullptr if not set) */
@@ -186,6 +193,12 @@ void Host::set_property(const std::string& key, const std::string& value)
 {
   simix::simcall([this, &key, &value] { this->pimpl_->set_property(key, value); });
 }
+
+void Host::set_properties(const std::map<std::string, std::string>& properties)
+{
+  simix::simcall([this, &properties] { this->pimpl_->set_properties(properties); });
+}
+
 /** Specify a profile turning the host on and off according to a exhaustive list or a stochastic law.
  * The profile must contain boolean values. */
 void Host::set_state_profile(kernel::profile::Profile* p)
@@ -511,7 +524,7 @@ int sg_host_is_off(sg_host_t host)
 xbt_dict_t sg_host_get_properties(sg_host_t host)
 {
   xbt_dict_t as_dict = xbt_dict_new_homogeneous(xbt_free_f);
-  std::unordered_map<std::string, std::string>* props = host->get_properties();
+  const std::unordered_map<std::string, std::string>* props = host->get_properties();
   if (props == nullptr)
     return nullptr;
   for (auto const& elm : *props) {
@@ -590,7 +603,7 @@ void sg_host_dump(sg_host_t host)
   XBT_INFO("Displaying host %s", host->get_cname());
   XBT_INFO("  - speed: %.0f", host->get_speed());
   XBT_INFO("  - available speed: %.2f", sg_host_get_available_speed(host));
-  std::unordered_map<std::string, std::string>* props = host->get_properties();
+  const std::unordered_map<std::string, std::string>* props = host->get_properties();
 
   if (not props->empty()) {
     XBT_INFO("  - properties:");

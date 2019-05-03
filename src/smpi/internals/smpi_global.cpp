@@ -5,6 +5,7 @@
 
 #include "mc/mc.h"
 #include "simgrid/s4u/Engine.hpp"
+#include "simgrid/plugins/file_system.h"
 #include "smpi_coll.hpp"
 #include "smpi_f2c.hpp"
 #include "smpi_host.hpp"
@@ -20,6 +21,7 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <fstream>
+#include <sys/stat.h>
 
 #if not defined(__APPLE__)
 #include <link.h>
@@ -127,7 +129,12 @@ MPI_Comm smpi_process_comm_self(){
   return smpi_process()->comm_self();
 }
 
-void smpi_process_init(int *argc, char ***argv){
+MPI_Info smpi_process_info_env(){
+  return smpi_process()->info_env();
+}
+
+void smpi_process_init(int*, char***)
+{
   simgrid::smpi::ActorExt::init();
 }
 
@@ -234,8 +241,10 @@ static void smpi_check_options()
   if (simgrid::config::is_default("smpi/host-speed")) {
     XBT_INFO("You did not set the power of the host running the simulation.  "
              "The timings will certainly not be accurate.  "
-             "Use the option \"--cfg=smpi/host-speed:<flops>\" to set its value."
-             "Check http://simgrid.org/simgrid/latest/doc/options.html#options_smpi_bench for more information.");
+             "Use the option \"--cfg=smpi/host-speed:<flops>\" to set its value.  "
+             "Check "
+             "https://simgrid.org/doc/latest/Configuring_SimGrid.html#automatic-benchmarking-of-smpi-code for more "
+             "information.");
   }
 
   xbt_assert(simgrid::config::get_value<double>("smpi/cpu-threshold") >= 0,
@@ -463,7 +472,7 @@ static smpi_entry_point_type smpi_resolve_function(void* handle)
 {
   smpi_fortran_entry_point_type entry_point_fortran = (smpi_fortran_entry_point_type)dlsym(handle, "user_main_");
   if (entry_point_fortran != nullptr) {
-    return [entry_point_fortran](int argc, char** argv) {
+    return [entry_point_fortran](int, char**) {
       entry_point_fortran();
       return 0;
     };
@@ -659,7 +668,7 @@ int smpi_main(const char* executable, int argc, char* argv[])
   SIMIX_global_init(&argc, argv);
 
   SMPI_switch_data_segment = &smpi_switch_data_segment;
-
+  sg_storage_file_system_init();
   // parse the platform file: get the host list
   simgrid::s4u::Engine::get_instance()->load_platform(argv[1]);
   SIMIX_comm_set_copy_data_callback(smpi_comm_copy_buffer_callback);

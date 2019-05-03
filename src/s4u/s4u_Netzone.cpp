@@ -21,22 +21,18 @@ xbt::signal<void(bool symmetrical, kernel::routing::NetPoint* src, kernel::routi
 xbt::signal<void(NetZone const&)> NetZone::on_creation;
 xbt::signal<void(NetZone const&)> NetZone::on_seal;
 
-NetZone::NetZone(kernel::routing::NetZoneImpl* impl) : pimpl_(impl) {}
-
-NetZone::~NetZone()
+const std::unordered_map<std::string, std::string>* NetZone::get_properties() const
 {
-}
-
-std::unordered_map<std::string, std::string>* NetZone::get_properties()
-{
-  return simix::simcall([this] { return &properties_; });
+  return &properties_;
 }
 
 /** Retrieve the property value (or nullptr if not set) */
-const char* NetZone::get_property(const std::string& key)
+const char* NetZone::get_property(const std::string& key) const
 {
-  return properties_.at(key).c_str();
+  auto prop = properties_.find(key);
+  return prop == properties_.end() ? nullptr : prop->second.c_str();
 }
+
 void NetZone::set_property(const std::string& key, const std::string& value)
 {
   simix::simcall([this, &key, &value] { properties_[key] = value; });

@@ -59,13 +59,14 @@ public:
 
   std::exception_ptr exception_;
   bool finished_  = false;
-  bool blocked_   = false; /* FIXME this field is never set to true. Either use it or remove it. */
   bool suspended_ = false;
 
   activity::ActivityImplPtr waiting_synchro = nullptr; /* the current blocking synchro if any */
   std::list<activity::ActivityImplPtr> comms;          /* the current non-blocking communication synchros */
   s_smx_simcall simcall;
-  std::vector<std::function<void(bool)>> on_exit; /* list of functions executed when the process dies */
+  /* list of functions executed when the process dies */
+  std::shared_ptr<std::vector<std::function<void(bool)>>> on_exit =
+      std::make_shared<std::vector<std::function<void(bool)>>>();
 
   std::function<void()> code;
   simix::Timer* kill_timer = nullptr;
@@ -97,6 +98,9 @@ public:
   /* S4U/implem interfaces */
 private:
   s4u::Actor piface_; // Our interface is part of ourselves
+
+  void undaemonize();
+
 public:
   s4u::ActorPtr iface() { return s4u::ActorPtr(&piface_); }
   s4u::Actor* ciface() { return &piface_; }
@@ -105,9 +109,9 @@ public:
   ActorImpl* start(const simix::ActorCode& code);
 
   static ActorImplPtr create(const std::string& name, const simix::ActorCode& code, void* data, s4u::Host* host,
-                             std::unordered_map<std::string, std::string>* properties, ActorImpl* parent_actor);
+                             const std::unordered_map<std::string, std::string>* properties, ActorImpl* parent_actor);
   static ActorImplPtr attach(const std::string& name, void* data, s4u::Host* host,
-                             std::unordered_map<std::string, std::string>* properties);
+                             const std::unordered_map<std::string, std::string>* properties);
   static void detach();
   void cleanup();
   void exit();
@@ -133,9 +137,12 @@ public:
   void* data                                                               = nullptr;
   s4u::Host* host                                                          = nullptr;
   double kill_time                                                         = 0.0;
-  std::shared_ptr<std::unordered_map<std::string, std::string>> properties = nullptr;
+  std::shared_ptr<const std::unordered_map<std::string, std::string>> properties = nullptr;
   bool auto_restart                                                        = false;
   bool daemon_                                                             = false;
+  /* list of functions executed when the process dies */
+  const std::shared_ptr<std::vector<std::function<void(bool)>>> on_exit;
+
   ProcessArg()                                                             = default;
 
   explicit ProcessArg(const std::string& name, const std::function<void()>& code, void* data, s4u::Host* host,
@@ -159,6 +166,7 @@ public:
       , kill_time(actor->get_kill_time())
       , auto_restart(actor->has_to_auto_restart())
       , daemon_(actor->is_daemon())
+      , on_exit(actor->on_exit)
   {
     properties.reset(actor->get_properties(), [](decltype(actor->get_properties())) {});
   }

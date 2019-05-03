@@ -27,8 +27,7 @@ class XBT_PUBLIC NetZone {
 protected:
   friend kernel::routing::NetZoneImpl;
 
-  explicit NetZone(kernel::routing::NetZoneImpl* impl);
-  ~NetZone();
+  explicit NetZone(kernel::routing::NetZoneImpl* impl) : pimpl_(impl) {}
 
 public:
   /** @brief Retrieves the name of that netzone as a C++ string */
@@ -41,7 +40,7 @@ public:
   std::vector<Host*> get_all_hosts();
   int get_host_count();
 
-  kernel::routing::NetZoneImpl* get_impl() { return pimpl_; }
+  kernel::routing::NetZoneImpl* get_impl() const { return pimpl_; }
 
 private:
   kernel::routing::NetZoneImpl* const pimpl_;
@@ -49,12 +48,12 @@ private:
 
 public:
   /** Get the properties assigned to a netzone */
-  std::unordered_map<std::string, std::string>* get_properties();
+  const std::unordered_map<std::string, std::string>* get_properties() const;
 
   std::vector<NetZone*> get_children();
 
   /** Retrieve the property value (or nullptr if not set) */
-  const char* get_property(const std::string& key);
+  const char* get_property(const std::string& key) const;
   void set_property(const std::string& key, const std::string& value);
 
   /* Add content to the netzone, at parsing time. It should be sealed afterward. */

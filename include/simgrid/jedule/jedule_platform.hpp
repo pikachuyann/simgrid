@@ -9,9 +9,10 @@
 #include <simgrid/forward.h>
 #include <xbt/dynar.h>
 
+#include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
-#include <string>
 
 namespace simgrid {
 namespace jedule{
@@ -20,7 +21,7 @@ public:
   explicit Container(const std::string& name);
   Container(const Container&) = delete;
   Container& operator=(const Container&) = delete;
-  virtual ~Container();
+
 private:
   int last_id_;
   int is_lowest_ = 0;
@@ -29,7 +30,7 @@ public:
   std::string name;
   std::unordered_map<const char*, unsigned int> name2id;
   Container *parent = nullptr;
-  std::vector<Container*> children;
+  std::vector<std::unique_ptr<Container>> children;
   std::vector<sg_host_t> resource_list;
   void add_child(Container* child);
   void add_resources(std::vector<sg_host_t> hosts);
@@ -43,7 +44,6 @@ public:
 class XBT_PUBLIC Subset {
 public:
   Subset(int s, int n, Container* p);
-  virtual ~Subset()=default;
   int start_idx; // start idx in resource_list of container
   int nres;      // number of resources spanning starting at start_idx
   Container *parent;
@@ -52,7 +52,7 @@ public:
 }
 }
 typedef simgrid::jedule::Container * jed_container_t;
-typedef simgrid::jedule::Subset * jed_subset_t;
-void get_resource_selection_by_hosts(std::vector<jed_subset_t>* subset_list, std::vector<sg_host_t> *host_list);
+void get_resource_selection_by_hosts(std::vector<simgrid::jedule::Subset>& subset_list,
+                                     const std::vector<sg_host_t>& host_list);
 
 #endif /* JED_SIMGRID_PLATFORM_H_ */

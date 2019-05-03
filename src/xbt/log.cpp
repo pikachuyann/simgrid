@@ -68,7 +68,7 @@ XBT_LOG_NEW_DEFAULT_SUBCATEGORY(log, xbt, "Loggings from the logging mechanism i
    which were already created (damnit. Too slow little beetle) */
 void xbt_log_preinit(void)
 {
-  xbt_log_default_appender             = xbt_log_appender_file_new(nullptr);
+  xbt_log_default_appender             = xbt_log_appender_stream(stderr);
   xbt_log_default_layout               = xbt_log_layout_simple_new(nullptr);
   _XBT_LOGV(XBT_LOG_ROOT_CAT).appender = xbt_log_default_appender;
   _XBT_LOGV(XBT_LOG_ROOT_CAT).layout = xbt_log_default_layout;
@@ -88,7 +88,7 @@ void xbt_log_init(int *argc, char **argv)
   int j                   = 1;
   int parse_args          = 1; // Stop parsing the parameters once we found '--'
 
-  xbt_log_control_set("xbt_help.threshold:VERBOSE xbt_help.fmt:%m%n");
+  xbt_log_control_set("xbt_help.app:stdout xbt_help.threshold:VERBOSE xbt_help.fmt:%m%n");
 
   /* Set logs and init log submodule */
   for (int i = 1; i < *argc; i++) {
@@ -409,11 +409,7 @@ static xbt_log_setting_t _xbt_log_parse_setting(const char *control_string)
              "Unknown priority name: %s (must be one of: trace,debug,verbose,info,warning,error,critical)", value);
     }
   } else if (strncmp(option, "additivity", option_len) == 0) {
-    if (strcasecmp(value, "ON") == 0 || strcasecmp(value, "YES") == 0 || strcmp(value, "1") == 0) {
-      set.additivity = 1;
-    } else {
-      set.additivity = 0;
-    }
+    set.additivity = (strcasecmp(value, "ON") == 0 || strcasecmp(value, "YES") == 0 || strcmp(value, "1") == 0);
   } else if (strncmp(option, "appender", option_len) == 0) {
     if (strncmp(value, "file:", 5) == 0) {
       set.appender = xbt_log_appender_file_new(value + 5);
@@ -421,6 +417,10 @@ static xbt_log_setting_t _xbt_log_parse_setting(const char *control_string)
       set.appender = xbt_log_appender2_file_new(value + 9, 1);
     } else if (strncmp(value, "splitfile:", 10) == 0) {
       set.appender = xbt_log_appender2_file_new(value + 10, 0);
+    } else if (strcmp(value, "stderr") == 0) {
+      set.appender = xbt_log_appender_stream(stderr);
+    } else if (strcmp(value, "stdout") == 0) {
+      set.appender = xbt_log_appender_stream(stdout);
     } else {
       THROWF(arg_error, 0, "Unknown appender log type: '%s'", value);
     }
@@ -597,6 +597,17 @@ static void xbt_log_help(void)
       "\n"
       "         -> %%d: date (UNIX-like epoch)\n"
       "         -> %%r: application age (time elapsed since the beginning of the application)\n"
+      "\n"
+      "   Category appender: --log=CATEGORY_NAME.app:APPENDER\n"
+      "      APPENDER may be:\n"
+      "         -> stdout or stderr: standard output streams\n"
+      "         -> file:NAME: append to file with given name\n"
+      "         -> splitfile:SIZE:NAME: append to files with maximum size SIZE per file.\n"
+      "                                 NAME may contain the %% wildcard as a placeholder for the file number.\n"
+      "         -> rollfile:SIZE:NAME: append to file with maximum size SIZE.\n"
+      "\n"
+      "   Category additivity: --log=CATEGORY_NAME.add:VALUE\n"
+      "      VALUE:  '0', '1', 'no', 'yes', 'on', or 'off'\n"
       "\n"
       "   Miscellaneous:\n"
       "      --help-log-categories    Display the current hierarchy of log categories.\n"

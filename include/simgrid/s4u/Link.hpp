@@ -33,7 +33,7 @@ class XBT_PUBLIC Link : public xbt::Extendable<Link> {
 public:
   enum class SharingPolicy { SPLITDUPLEX = 2, SHARED = 1, FATPIPE = 0 };
 
-  kernel::resource::LinkImpl* get_impl() { return pimpl_; }
+  kernel::resource::LinkImpl* get_impl() const { return pimpl_; }
 
   /** @brief Retrieve a link from its name */
   static Link* by_name(const std::string& name);
@@ -93,7 +93,7 @@ public:
    * The profile must contain absolute values */
   void set_latency_profile(kernel::profile::Profile* profile);
 
-  const char* get_property(const std::string& key);
+  const char* get_property(const std::string& key) const;
   void set_property(const std::string& key, const std::string& value);
 
   /* The signals */

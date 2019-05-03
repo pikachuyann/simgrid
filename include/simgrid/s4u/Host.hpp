@@ -101,7 +101,8 @@ public:
 
   const char* get_property(const std::string& key) const;
   void set_property(const std::string& key, const std::string& value);
-  std::unordered_map<std::string, std::string>* get_properties();
+  const std::unordered_map<std::string, std::string>* get_properties() const;
+  void set_properties(const std::map<std::string, std::string>& properties);
 
   void set_state_profile(kernel::profile::Profile* p);
   void set_speed_profile(kernel::profile::Profile* p);
@@ -146,7 +147,7 @@ private:
 public:
 #ifndef DOXYGEN
   /** DO NOT USE DIRECTLY (@todo: these should be protected, once our code is clean) */
-  surf::Cpu* pimpl_cpu = nullptr;
+  kernel::resource::Cpu* pimpl_cpu = nullptr;
   // TODO, this could be a unique_ptr
   surf::HostImpl* pimpl_ = nullptr;
   /** DO NOT USE DIRECTLY (@todo: these should be protected, once our code is clean) */

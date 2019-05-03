@@ -70,7 +70,7 @@ ActorImpl::~ActorImpl() = default;
  */
 
 ActorImplPtr ActorImpl::attach(const std::string& name, void* data, s4u::Host* host,
-                               std::unordered_map<std::string, std::string>* properties)
+                               const std::unordered_map<std::string, std::string>* properties)
 {
   // This is mostly a copy/paste from create(), it'd be nice to share some code between those two functions.
 
@@ -93,8 +93,7 @@ ActorImplPtr ActorImpl::attach(const std::string& name, void* data, s4u::Host* h
 
   /* Add properties */
   if (properties != nullptr)
-    for (auto const& kv : *properties)
-      actor->set_property(kv.first, kv.second);
+    actor->set_properties(*properties);
 
   /* Add the process to it's host process list */
   host->pimpl_->process_list_.push_back(*actor);
@@ -140,13 +139,14 @@ void ActorImpl::cleanup()
     watched_hosts.insert(get_host()->get_name());
   }
 
-  // Execute the termination callbacks
-  bool failed = context_->iwannadie;
-  while (not on_exit.empty()) {
-    auto exit_fun = on_exit.back();
-    on_exit.pop_back();
-    exit_fun(failed);
+  if (on_exit) {
+    // Execute the termination callbacks
+    bool failed = context_->iwannadie;
+    for (auto exit_fun = on_exit->crbegin(); exit_fun != on_exit->crend(); ++exit_fun)
+      (*exit_fun)(failed);
+    on_exit.reset();
   }
+  undaemonize();
 
   /* cancel non-blocking activities */
   for (auto activity : comms)
@@ -188,7 +188,6 @@ void ActorImpl::cleanup()
 void ActorImpl::exit()
 {
   context_->iwannadie = true;
-  blocked_            = false;
   suspended_          = false;
   exception_          = nullptr;
 
@@ -307,15 +306,20 @@ void ActorImpl::daemonize()
   if (not daemon_) {
     daemon_ = true;
     simix_global->daemons.push_back(this);
-    SIMIX_process_on_exit(this, [this](bool) {
-      auto& vect = simix_global->daemons;
-      auto it    = std::find(vect.begin(), vect.end(), this);
-      xbt_assert(it != vect.end(), "The dying daemon is not a daemon after all. Please report that bug.");
+  }
+}
 
-      /* Don't move the whole content since we don't really care about the order */
-      std::swap(*it, vect.back());
-      vect.pop_back();
-    });
+void ActorImpl::undaemonize()
+{
+  if (daemon_) {
+    auto& vect = simix_global->daemons;
+    auto it    = std::find(vect.begin(), vect.end(), this);
+    xbt_assert(it != vect.end(), "The dying daemon is not a daemon after all. Please report that bug.");
+    /* Don't move the whole content since we don't really care about the order */
+
+    std::swap(*it, vect.back());
+    vect.pop_back();
+    daemon_ = false;
   }
 }
 
@@ -334,6 +338,7 @@ s4u::Actor* ActorImpl::restart()
   // start the new actor
   ActorImplPtr actor =
       ActorImpl::create(arg.name, std::move(arg.code), arg.data, arg.host, arg.properties.get(), nullptr);
+  *actor->on_exit = std::move(*arg.on_exit);
   actor->set_kill_time(arg.kill_time);
   actor->set_auto_restart(arg.auto_restart);
 
@@ -472,7 +477,7 @@ ActorImpl* ActorImpl::start(const simix::ActorCode& code)
 }
 
 ActorImplPtr ActorImpl::create(const std::string& name, const simix::ActorCode& code, void* data, s4u::Host* host,
-                               std::unordered_map<std::string, std::string>* properties, ActorImpl* parent_actor)
+                               const std::unordered_map<std::string, std::string>* properties, ActorImpl* parent_actor)
 {
   XBT_DEBUG("Start actor %s@'%s'", name.c_str(), host->get_cname());
 
@@ -487,8 +492,7 @@ ActorImplPtr ActorImpl::create(const std::string& name, const simix::ActorCode& 
 
   /* Add properties */
   if (properties != nullptr)
-    for (auto const& kv : *properties)
-      actor->set_property(kv.first, kv.second);
+    actor->set_properties(*properties);
 
   actor->start(code);
 
@@ -652,7 +656,7 @@ void SIMIX_process_on_exit(smx_actor_t actor, const std::function<void(int, void
 void SIMIX_process_on_exit(smx_actor_t actor, const std::function<void(bool /*failed*/)>& fun)
 {
   xbt_assert(actor, "current process not found: are you in maestro context ?");
-  actor->on_exit.emplace_back(fun);
+  actor->on_exit->emplace_back(fun);
 }
 
 /** @brief Restart a process, starting it again from the beginning. */

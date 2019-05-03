@@ -53,7 +53,7 @@ File::File(const std::string& fullpath, sg_host_t host, void* userdata) : fullpa
   // assign a file descriptor id to the newly opened File
   FileDescriptorHostExt* ext = host->extension<simgrid::s4u::FileDescriptorHostExt>();
   if (ext->file_descriptor_table == nullptr) {
-    ext->file_descriptor_table = new std::vector<int>(sg_storage_max_file_descriptors);
+    ext->file_descriptor_table.reset(new std::vector<int>(sg_storage_max_file_descriptors));
     std::iota(ext->file_descriptor_table->rbegin(), ext->file_descriptor_table->rend(), 0); // Fill with ..., 1, 0.
   }
   xbt_assert(not ext->file_descriptor_table->empty(), "Too much files are opened! Some have to be closed.");
@@ -102,7 +102,7 @@ sg_size_t File::read(sg_size_t size)
   sg_size_t read_size = local_storage_->read(std::min(size, size_ - current_position_));
   current_position_ += read_size;
 
-  if (host->get_name() != Host::current()->get_name()) {
+  if (host->get_name() != Host::current()->get_name() && read_size > 0) {
     /* the file is hosted on a remote host, initiate a communication between src and dest hosts for data transfer */
     XBT_DEBUG("File is on %s remote host, initiate data transfer of %llu bytes.", host->get_cname(), read_size);
     std::vector<Host*> m_host_list   = {Host::current(), host};
@@ -120,7 +120,7 @@ sg_size_t File::read(sg_size_t size)
  * @param size of the file to write
  * @return the number of bytes successfully write or -1 if an error occurred
  */
-sg_size_t File::write(sg_size_t size)
+sg_size_t File::write(sg_size_t size, int write_inside)
 {
   if (size == 0) /* Nothing to write, return */
     return 0;
@@ -138,18 +138,24 @@ sg_size_t File::write(sg_size_t size)
     this_actor::parallel_execute(m_host_list, flops_amount, bytes_amount);
   }
 
-  XBT_DEBUG("WRITE %s on disk '%s'. size '%llu/%llu'", get_path(), local_storage_->get_cname(), size, size_);
+  XBT_DEBUG("WRITE %s on disk '%s'. size '%llu/%llu' '%llu:%llu'", get_path(), local_storage_->get_cname(), size, size_, sg_storage_get_size_used(local_storage_), sg_storage_get_size(local_storage_));
   // If the storage is full before even starting to write
-  if (sg_storage_get_size_used(local_storage_) >= sg_storage_get_size(local_storage_))
-    return 0;
-  /* Substract the part of the file that might disappear from the used sized on the storage element */
-  local_storage_->extension<FileSystemStorageExt>()->decr_used_size(size_ - current_position_);
-
-  sg_size_t write_size = local_storage_->write(size);
-  local_storage_->extension<FileSystemStorageExt>()->incr_used_size(write_size);
-
-  current_position_ += write_size;
-  size_ = current_position_;
+   if (sg_storage_get_size_used(local_storage_) >= sg_storage_get_size(local_storage_))
+     return 0;
+  sg_size_t write_size=0;
+  if(write_inside==0){
+    /* Substract the part of the file that might disappear from the used sized on the storage element */
+    local_storage_->extension<FileSystemStorageExt>()->decr_used_size(size_ - current_position_);
+    write_size = local_storage_->write(size);
+    local_storage_->extension<FileSystemStorageExt>()->incr_used_size(write_size);
+    current_position_ += write_size;
+    size_ = current_position_;
+  }else {
+    write_size = local_storage_->write(size);
+    current_position_ += write_size;
+    if(current_position_>size_)
+      size_ = current_position_;
+  }
   std::map<std::string, sg_size_t>* content = local_storage_->extension<FileSystemStorageExt>()->get_content();
 
   content->erase(path_);
@@ -288,13 +294,8 @@ int File::remote_move(sg_host_t host, const char* fullpath)
 
 FileSystemStorageExt::FileSystemStorageExt(simgrid::s4u::Storage* ptr)
 {
-  content_ = parse_content(ptr->get_impl()->content_name);
+  content_.reset(parse_content(ptr->get_impl()->content_name));
   size_    = ptr->get_impl()->size_;
-}
-
-FileSystemStorageExt::~FileSystemStorageExt()
-{
-  delete content_;
 }
 
 std::map<std::string, sg_size_t>* FileSystemStorageExt::parse_content(const std::string& filename)

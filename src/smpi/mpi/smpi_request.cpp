@@ -36,14 +36,14 @@ extern void (*smpi_comm_copy_data_callback)(simgrid::kernel::activity::CommImpl*
 namespace simgrid{
 namespace smpi{
 
-Request::Request(void* buf, int count, MPI_Datatype datatype, int src, int dst, int tag, MPI_Comm comm, unsigned flags, MPI_Op op)
-    : buf_(buf), old_type_(datatype), src_(src), dst_(dst), tag_(tag), comm_(comm), flags_(flags), op_(op)
+Request::Request(const void* buf, int count, MPI_Datatype datatype, int src, int dst, int tag, MPI_Comm comm, unsigned flags, MPI_Op op)
+    : buf_(const_cast<void*>(buf)), old_type_(datatype), src_(src), dst_(dst), tag_(tag), comm_(comm), flags_(flags), op_(op)
 {
   void *old_buf = nullptr;
 // FIXME Handle the case of a partial shared malloc.
   if ((((flags & MPI_REQ_RECV) != 0) && ((flags & MPI_REQ_ACCUMULATE) != 0)) || (datatype->flags() & DT_FLAG_DERIVED)) {
     // This part handles the problem of non-contiguous memory
-    old_buf = buf;
+    old_buf = const_cast<void*>(buf);
     if (count==0){
       buf_ = nullptr;
     }else {
@@ -92,6 +92,7 @@ void Request::unref(MPI_Request* request)
     if((*request)->refcount_==0){
       if ((*request)->flags_ & MPI_REQ_GENERALIZED){
         ((*request)->generalized_funcs)->free_fn(((*request)->generalized_funcs)->extra_state);
+        delete (*request)->generalized_funcs;
       }else{
         Comm::unref((*request)->comm_);
         Datatype::unref((*request)->old_type_);
@@ -170,7 +171,7 @@ void Request::print_request(const char *message)
 
 
 /* factories, to hide the internal flags from the caller */
-MPI_Request Request::send_init(void *buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm)
+MPI_Request Request::send_init(const void *buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm)
 {
 
   return new Request(buf == MPI_BOTTOM ? nullptr : buf, count, datatype, simgrid::s4u::this_actor::get_pid(),
@@ -178,14 +179,14 @@ MPI_Request Request::send_init(void *buf, int count, MPI_Datatype datatype, int 
                      MPI_REQ_PERSISTENT | MPI_REQ_SEND | MPI_REQ_PREPARED);
 }
 
-MPI_Request Request::ssend_init(void *buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm)
+MPI_Request Request::ssend_init(const void *buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm)
 {
   return new Request(buf == MPI_BOTTOM ? nullptr : buf, count, datatype, simgrid::s4u::this_actor::get_pid(),
                      comm->group()->actor(dst)->get_pid(), tag, comm,
                      MPI_REQ_PERSISTENT | MPI_REQ_SSEND | MPI_REQ_SEND | MPI_REQ_PREPARED);
 }
 
-MPI_Request Request::isend_init(void *buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm)
+MPI_Request Request::isend_init(const void *buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm)
 {
   return new Request(buf == MPI_BOTTOM ? nullptr : buf, count, datatype, simgrid::s4u::this_actor::get_pid(),
                      comm->group()->actor(dst)->get_pid(), tag, comm,
@@ -193,7 +194,7 @@ MPI_Request Request::isend_init(void *buf, int count, MPI_Datatype datatype, int
 }
 
 
-MPI_Request Request::rma_send_init(void *buf, int count, MPI_Datatype datatype, int src, int dst, int tag, MPI_Comm comm,
+MPI_Request Request::rma_send_init(const void *buf, int count, MPI_Datatype datatype, int src, int dst, int tag, MPI_Comm comm,
                                MPI_Op op)
 {
   MPI_Request request = nullptr; /* MC needs the comm to be set to nullptr during the call */
@@ -242,7 +243,7 @@ MPI_Request Request::irecv_init(void *buf, int count, MPI_Datatype datatype, int
                      MPI_REQ_PERSISTENT | MPI_REQ_RECV | MPI_REQ_PREPARED);
 }
 
-MPI_Request Request::isend(void *buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm)
+MPI_Request Request::isend(const void *buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm)
 {
   MPI_Request request = nullptr; /* MC needs the comm to be set to nullptr during the call */
   request = new Request(buf == MPI_BOTTOM ? nullptr : buf, count, datatype, simgrid::s4u::this_actor::get_pid(),
@@ -252,7 +253,7 @@ MPI_Request Request::isend(void *buf, int count, MPI_Datatype datatype, int dst,
   return request;
 }
 
-MPI_Request Request::issend(void *buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm)
+MPI_Request Request::issend(const void *buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm)
 {
   MPI_Request request = nullptr; /* MC needs the comm to be set to nullptr during the call */
   request = new Request(buf == MPI_BOTTOM ? nullptr : buf, count, datatype, simgrid::s4u::this_actor::get_pid(),
@@ -281,7 +282,7 @@ void Request::recv(void *buf, int count, MPI_Datatype datatype, int src, int tag
   request = nullptr;
 }
 
-void Request::send(void *buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm)
+void Request::send(const void *buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm)
 {
   MPI_Request request = nullptr; /* MC needs the comm to be set to nullptr during the call */
   request = new Request(buf == MPI_BOTTOM ? nullptr : buf, count, datatype, simgrid::s4u::this_actor::get_pid(),
@@ -292,7 +293,7 @@ void Request::send(void *buf, int count, MPI_Datatype datatype, int dst, int tag
   request = nullptr;
 }
 
-void Request::ssend(void *buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm)
+void Request::ssend(const void *buf, int count, MPI_Datatype datatype, int dst, int tag, MPI_Comm comm)
 {
   MPI_Request request = nullptr; /* MC needs the comm to be set to nullptr during the call */
   request = new Request(buf == MPI_BOTTOM ? nullptr : buf, count, datatype, simgrid::s4u::this_actor::get_pid(),
@@ -304,7 +305,7 @@ void Request::ssend(void *buf, int count, MPI_Datatype datatype, int dst, int ta
   request = nullptr;
 }
 
-void Request::sendrecv(void *sendbuf, int sendcount, MPI_Datatype sendtype,int dst, int sendtag,
+void Request::sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype,int dst, int sendtag,
                        void *recvbuf, int recvcount, MPI_Datatype recvtype, int src, int recvtag,
                        MPI_Comm comm, MPI_Status * status)
 {
@@ -877,7 +878,7 @@ int Request::wait(MPI_Request * request, MPI_Status * status)
             int count=(*request)->size_/ (*request)->old_type_->size();
             (*request)->op_->apply(buf, (*request)->buf_, &count, (*request)->old_type_);
           }
-          smpi_free_tmp_buffer(buf);
+          smpi_free_tmp_buffer(static_cast<unsigned char*>(buf));
         }
       }
       if((*request)->nbc_requests_[i]!=MPI_REQUEST_NULL)
@@ -1137,7 +1138,7 @@ int Request::grequest_start( MPI_Grequest_query_function *query_fn, MPI_Grequest
   (*request)->flags_ |= MPI_REQ_GENERALIZED;
   (*request)->flags_ |= MPI_REQ_PERSISTENT;
   (*request)->refcount_ = 1;
-  ((*request)->generalized_funcs)=xbt_new0(s_smpi_mpi_generalized_request_funcs_t ,1);
+  ((*request)->generalized_funcs) = new s_smpi_mpi_generalized_request_funcs_t;
   ((*request)->generalized_funcs)->query_fn=query_fn;
   ((*request)->generalized_funcs)->free_fn=free_fn;
   ((*request)->generalized_funcs)->cancel_fn=cancel_fn;
@@ -1158,8 +1159,13 @@ int Request::grequest_complete( MPI_Request request){
 }
 
 void Request::set_nbc_requests(MPI_Request* reqs, int size){
-  nbc_requests_=reqs;
-  nbc_requests_size_=size;
+  nbc_requests_size_ = size;
+  if (size > 0) {
+    nbc_requests_ = reqs;
+  } else {
+    delete[] reqs;
+    nbc_requests_ = nullptr;
+  }
 }
 
 int Request::get_nbc_requests_size(){

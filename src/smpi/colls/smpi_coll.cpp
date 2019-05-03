@@ -115,9 +115,9 @@ void Colls::set_collectives(){
   }
 }
 
-//Implementations of the single algorith collectives
+//Implementations of the single algorithm collectives
 
-int Colls::gatherv(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int *recvcounts, int *displs,
+int Colls::gatherv(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, const int *recvcounts, const int *displs,
                       MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
   MPI_Request request;
@@ -126,7 +126,7 @@ int Colls::gatherv(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *re
 }
 
 
-int Colls::scatterv(void *sendbuf, int *sendcounts, int *displs, MPI_Datatype sendtype, void *recvbuf, int recvcount,
+int Colls::scatterv(const void *sendbuf, const int *sendcounts, const int *displs, MPI_Datatype sendtype, void *recvbuf, int recvcount,
                        MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
   MPI_Request request;
@@ -135,7 +135,7 @@ int Colls::scatterv(void *sendbuf, int *sendcounts, int *displs, MPI_Datatype se
 }
 
 
-int Colls::scan(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
+int Colls::scan(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {
   int system_tag = -888;
   MPI_Aint lb      = 0;
@@ -150,8 +150,8 @@ int Colls::scan(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, 
   Datatype::copy(sendbuf, count, datatype, recvbuf, count, datatype);
 
   // Send/Recv buffers to/from others
-  MPI_Request *requests = xbt_new(MPI_Request, size - 1);
-  void **tmpbufs = xbt_new(void *, rank);
+  MPI_Request* requests = new MPI_Request[size - 1];
+  unsigned char** tmpbufs = new unsigned char*[rank];
   int index = 0;
   for (int other = 0; other < rank; other++) {
     tmpbufs[index] = smpi_get_tmp_sendbuffer(count * dataext);
@@ -191,12 +191,12 @@ int Colls::scan(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, 
   for(index = 0; index < size-1; index++) {
     Request::unref(&requests[index]);
   }
-  xbt_free(tmpbufs);
-  xbt_free(requests);
+  delete[] tmpbufs;
+  delete[] requests;
   return MPI_SUCCESS;
 }
 
-int Colls::exscan(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
+int Colls::exscan(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {
   int system_tag = -888;
   MPI_Aint lb         = 0;
@@ -208,8 +208,8 @@ int Colls::exscan(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype
   datatype->extent(&lb, &dataext);
 
   // Send/Recv buffers to/from others
-  MPI_Request *requests = xbt_new(MPI_Request, size - 1);
-  void **tmpbufs = xbt_new(void *, rank);
+  MPI_Request* requests = new MPI_Request[size - 1];
+  unsigned char** tmpbufs = new unsigned char*[rank];
   int index = 0;
   for (int other = 0; other < rank; other++) {
     tmpbufs[index] = smpi_get_tmp_sendbuffer(count * dataext);
@@ -258,13 +258,13 @@ int Colls::exscan(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype
   for(index = 0; index < size-1; index++) {
     Request::unref(&requests[index]);
   }
-  xbt_free(tmpbufs);
-  xbt_free(requests);
+  delete[] tmpbufs;
+  delete[] requests;
   return MPI_SUCCESS;
 }
 
-int Colls::alltoallw(void *sendbuf, int *sendcounts, int *senddisps, MPI_Datatype* sendtypes,
-                              void *recvbuf, int *recvcounts, int *recvdisps, MPI_Datatype* recvtypes, MPI_Comm comm)
+int Colls::alltoallw(const void *sendbuf, const int *sendcounts, const int *senddisps, const MPI_Datatype* sendtypes,
+                              void *recvbuf, const int *recvcounts, const int *recvdisps, const MPI_Datatype* recvtypes, MPI_Comm comm)
 {
   MPI_Request request;
   Colls::ialltoallw(sendbuf, sendcounts, senddisps, sendtypes, recvbuf, recvcounts, recvdisps, recvtypes, comm, &request);  

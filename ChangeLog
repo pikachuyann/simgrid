@@ -1,12 +1,23 @@
 SimGrid (3.23) NOT RELEASED (Release Target: June 21. 2019, 15:54 UTC)
 
+General:
+ - Stop setting random seed with srand48() at initialization.
+
 XBT:
+ - New log appenders: stdout and stderr. Use stdout for xbt_help.
  - Drop xbt_dict_dump.
 
-Fixed bugs (GH=GitHub; FM=FramaGit):
+SMPI:
+ - SMPI now reports support of MPI3.1. This does not mean SMPI supports all MPI 3 calls, but it was already the case with 2.2
+ - MPI/IO is now supported over the Storage API (no files are written or read, storage is simulated). Supported calls are all synchronous ones.
+ - MPI interface is now const correct for input parameters
+
+Fixed bugs (GH=GitHub; FG=FramaGit):
+ - FG#10: Can not use MSG_process_set_data from SMPI any more
+ - FG#11: Auto-restart actors forget their on_exit behavior
+ - GH#133: Java : a process can run on a VM even if its host is off
  - GH#326: Valgrind-detected error for join() when energy plugin is activated
- - FM#10: Can not use MSG_process_set_data from SMPI any more
- 
+
 ----------------------------------------------------------------------------
 
 SimGrid (3.22) April 1. 2019

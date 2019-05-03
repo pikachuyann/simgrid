@@ -142,7 +142,7 @@ public:
 
   // ***** Actor creation *****
   /** Retrieve a reference to myself */
-  static ActorPtr self();
+  static Actor* self();
 
   /** Signal to others that a new actor has been created **/
   static xbt::signal<void(Actor&)> on_creation;
@@ -289,7 +289,7 @@ public:
   kernel::actor::ActorImpl* get_impl() const { return pimpl_; }
 
   /** Retrieve the property value (or nullptr if not set) */
-  std::unordered_map<std::string, std::string>*
+  const std::unordered_map<std::string, std::string>*
   get_properties() const; // FIXME: do not export the map, but only the keys or something
   const char* get_property(const std::string& key) const;
   void set_property(const std::string& key, const std::string& value);

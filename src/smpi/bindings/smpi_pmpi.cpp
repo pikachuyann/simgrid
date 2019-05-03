@@ -31,7 +31,7 @@ void TRACE_smpi_set_category(const char *category)
 
 /* PMPI User level calls */
 
-int PMPI_Init(int *argc, char ***argv)
+int PMPI_Init(int*, char***)
 {
   xbt_assert(simgrid::s4u::Engine::is_initialized(),
              "Your MPI program was not properly initialized. The easiest is to use smpirun to start it.");
@@ -142,7 +142,7 @@ double PMPI_Wtick()
   return sg_maxmin_precision;
 }
 
-int PMPI_Address(void *location, MPI_Aint * address)
+int PMPI_Address(const void* location, MPI_Aint* address)
 {
   if (address==nullptr) {
     return MPI_ERR_ARG;
@@ -152,7 +152,7 @@ int PMPI_Address(void *location, MPI_Aint * address)
   }
 }
 
-int PMPI_Get_address(void *location, MPI_Aint * address)
+int PMPI_Get_address(const void *location, MPI_Aint * address)
 {
   return PMPI_Address(location, address);
 }
@@ -167,7 +167,7 @@ int PMPI_Get_processor_name(char *name, int *resultlen)
   return MPI_SUCCESS;
 }
 
-int PMPI_Get_count(MPI_Status * status, MPI_Datatype datatype, int *count)
+int PMPI_Get_count(const MPI_Status * status, MPI_Datatype datatype, int *count)
 {
   if (status == nullptr || count == nullptr) {
     return MPI_ERR_ARG;

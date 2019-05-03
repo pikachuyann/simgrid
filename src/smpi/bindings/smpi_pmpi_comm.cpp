@@ -7,6 +7,7 @@
 
 #include "private.hpp"
 #include "smpi_comm.hpp"
+#include "smpi_info.hpp"
 #include "src/smpi/include/smpi_actor.hpp"
 
 XBT_LOG_EXTERNAL_DEFAULT_CATEGORY(smpi_pmpi);
@@ -49,7 +50,7 @@ int PMPI_Comm_get_name (MPI_Comm comm, char* name, int* len)
   }
 }
 
-int PMPI_Comm_set_name (MPI_Comm comm, char* name)
+int PMPI_Comm_set_name (MPI_Comm comm, const char* name)
 {
   if (comm == MPI_COMM_NULL)  {
     return MPI_ERR_COMM;
@@ -102,6 +103,18 @@ int PMPI_Comm_dup(MPI_Comm comm, MPI_Comm * newcomm)
     return MPI_ERR_ARG;
   } else {
     return comm->dup(newcomm);
+  }
+}
+
+int PMPI_Comm_dup_with_info(MPI_Comm comm, MPI_Info info, MPI_Comm * newcomm)
+{
+  if (comm == MPI_COMM_NULL) {
+    return MPI_ERR_COMM;
+  } else if (newcomm == nullptr) {
+    return MPI_ERR_ARG;
+  } else {
+    comm->dup_with_info(info, newcomm);
+    return MPI_SUCCESS;
   }
 }
 
@@ -219,6 +232,26 @@ int PMPI_Comm_get_attr (MPI_Comm comm, int comm_keyval, void *attribute_val, int
 int PMPI_Comm_set_attr (MPI_Comm comm, int comm_keyval, void *attribute_val)
 {
   return PMPI_Attr_put(comm, comm_keyval, attribute_val);
+}
+
+int PMPI_Comm_get_info(MPI_Comm comm, MPI_Info* info)
+{
+  if (comm == MPI_COMM_NULL)  {
+    return MPI_ERR_WIN;
+  } else {
+    *info = comm->info();
+    return MPI_SUCCESS;
+  }
+}
+
+int PMPI_Comm_set_info(MPI_Comm  comm, MPI_Info info)
+{
+  if (comm == MPI_COMM_NULL)  {
+    return MPI_ERR_TYPE;
+  } else {
+    comm->set_info(info);
+    return MPI_SUCCESS;
+  }
 }
 
 int PMPI_Comm_delete_attr (MPI_Comm comm, int comm_keyval)
