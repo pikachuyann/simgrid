@@ -54,8 +54,6 @@ simgrid::config::Flag<bool> _sg_mc_timeout{
 int _sg_do_model_check = 0;
 int _sg_mc_max_visited_states = 0;
 
-simgrid::config::Flag<bool> _sg_do_model_check_record{"model-check/record", "Record the model-checking paths", false};
-
 simgrid::config::Flag<int> _sg_mc_checkpoint{
     "model-check/checkpoint", "Specify the amount of steps between checkpoints during stateful model-checking "
                               "(default: 0 => stateless verification). If value=1, one checkpoint is saved for each "
@@ -65,9 +63,6 @@ simgrid::config::Flag<int> _sg_mc_checkpoint{
 
 simgrid::config::Flag<bool> _sg_mc_sparse_checkpoint{"model-check/sparse-checkpoint", "Use sparse per-page snapshots.",
                                                      false, [](bool) { _mc_cfg_cb_check("checkpointing value"); }};
-
-simgrid::config::Flag<bool> _sg_mc_ksm{"model-check/ksm", "Kernel same-page merging", false,
-                                       [](bool) { _mc_cfg_cb_check("KSM value"); }};
 
 simgrid::config::Flag<std::string> _sg_mc_property_file{
     "model-check/property", "Name of the file containing the property, as formatted by the ltl2ba program.", "",
@@ -107,13 +102,6 @@ static simgrid::config::Flag<std::string> _sg_mc_reduce{
 simgrid::config::Flag<bool> _sg_mc_hash{
     "model-check/hash", "Whether to enable state hash for state comparison (experimental)", false,
     [](bool) { _mc_cfg_cb_check("value to enable/disable the use of global hash to speedup state comparaison"); }};
-
-simgrid::config::Flag<bool> _sg_mc_snapshot_fds{
-    "model-check/snapshot-fds",
-    {"model-check/snapshot_fds"},
-    "Whether file descriptors must be snapshoted (currently unusable)",
-    false,
-    [](bool) { _mc_cfg_cb_check("value to enable/disable the use of FD snapshotting"); }};
 
 simgrid::config::Flag<int> _sg_mc_max_depth{"model-check/max-depth",
                                             {"model-check/max_depth"},

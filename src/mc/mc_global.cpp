@@ -97,7 +97,6 @@ void MC_run()
   MC_ignore_heap(simgrid::mc::processes_time.data(),
     simgrid::mc::processes_time.size() * sizeof(simgrid::mc::processes_time[0]));
   simgrid::mc::Client::get()->mainLoop();
-  simgrid::mc::processes_time.clear();
 }
 
 void MC_show_deadlock()
@@ -107,7 +106,8 @@ void MC_show_deadlock()
   XBT_INFO("**************************");
   XBT_INFO("Counter-example execution trace:");
   for (auto const& s : mc_model_checker->getChecker()->getTextualTrace())
-    XBT_INFO("%s", s.c_str());
+    XBT_INFO("  %s", s.c_str());
+  simgrid::mc::dumpRecordPath();
   simgrid::mc::session->logState();
 }
 

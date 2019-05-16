@@ -203,7 +203,7 @@ HostEnergy::HostEnergy(simgrid::s4u::Host* ptr) : host_(ptr), last_updated_(surf
   if (off_power_str != nullptr) {
     try {
       this->watts_off_ = std::stod(std::string(off_power_str));
-    } catch (std::invalid_argument& ia) {
+    } catch (const std::invalid_argument&) {
       throw std::invalid_argument(std::string("Invalid value for property watt_off of host ") + host_->get_cname() +
                                   ": " + off_power_str);
     }
@@ -503,7 +503,7 @@ void sg_host_energy_plugin_init()
       simgrid::s4u::VirtualMachine* vm = dynamic_cast<simgrid::s4u::VirtualMachine*>(host);
       if (vm != nullptr)
         host = vm->get_pm();
-
+      xbt_assert(host != nullptr);
       host->extension<HostEnergy>()->update();
     }
   });
@@ -520,8 +520,10 @@ void sg_host_energy_update_all()
   simgrid::simix::simcall([]() {
     std::vector<simgrid::s4u::Host*> list = simgrid::s4u::Engine::get_instance()->get_all_hosts();
     for (auto const& host : list)
-      if (dynamic_cast<simgrid::s4u::VirtualMachine*>(host) == nullptr) // Ignore virtual machines
+      if (dynamic_cast<simgrid::s4u::VirtualMachine*>(host) == nullptr) { // Ignore virtual machines
+        xbt_assert(host != nullptr);
         host->extension<HostEnergy>()->update();
+      }
   });
 }
 

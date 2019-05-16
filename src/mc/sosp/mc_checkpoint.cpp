@@ -5,11 +5,6 @@
 
 #include <unistd.h>
 
-#include <cstring>
-#include <dirent.h>
-#include <fcntl.h>
-#include <link.h>
-
 #ifndef WIN32
 #include <sys/mman.h>
 #endif
@@ -62,7 +57,7 @@ namespace mc {
  *
  *  @param region     Target region
  */
-static void restore(mc_mem_region_t region)
+static void restore(RegionSnapshot* region)
 {
   switch (region->storage_type()) {
     case simgrid::mc::StorageType::Flat:
@@ -70,7 +65,16 @@ static void restore(mc_mem_region_t region)
       break;
 
     case simgrid::mc::StorageType::Chunked:
-      mc_region_restore_sparse(&mc_model_checker->process(), region);
+      xbt_assert(((region->permanent_address().address()) & (xbt_pagesize - 1)) == 0, "Not at the beginning of a page");
+      xbt_assert(simgrid::mc::mmu::chunk_count(region->size()) == region->page_data().page_count());
+
+      for (size_t i = 0; i != region->page_data().page_count(); ++i) {
+        void* target_page =
+            (void*)simgrid::mc::mmu::join(i, (std::uintptr_t)(void*)region->permanent_address().address());
+        const void* source_page = region->page_data().page(i);
+        mc_model_checker->process().write_bytes(source_page, xbt_pagesize, remote(target_page));
+      }
+
       break;
 
     case simgrid::mc::StorageType::Privatized:
@@ -97,18 +101,18 @@ RegionSnapshot privatized_region(RegionType region_type, void* start_addr, void*
   mc_model_checker->process().read_bytes(&privatization_regions, sizeof(privatization_regions),
                                          remote(remote_smpi_privatization_regions));
 
-  std::vector<simgrid::mc::RegionSnapshot> data;
+  std::vector<RegionSnapshot> data;
   data.reserve(process_count);
   for (size_t i = 0; i < process_count; i++)
-    data.push_back(simgrid::mc::region(region_type, start_addr, privatization_regions[i].address, size));
+    data.push_back(region(region_type, start_addr, privatization_regions[i].address, size));
 
-  simgrid::mc::RegionSnapshot region = simgrid::mc::RegionSnapshot(region_type, start_addr, permanent_addr, size);
+  RegionSnapshot region = RegionSnapshot(region_type, start_addr, permanent_addr, size);
   region.privatized_data(std::move(data));
   return region;
 }
 #endif
 
-static void add_region(int index, simgrid::mc::Snapshot* snapshot, simgrid::mc::RegionType type,
+static void add_region(simgrid::mc::Snapshot* snapshot, simgrid::mc::RegionType type,
                        simgrid::mc::ObjectInformation* object_info, void* start_addr, void* permanent_addr,
                        std::size_t size)
 {
@@ -127,24 +131,23 @@ static void add_region(int index, simgrid::mc::Snapshot* snapshot, simgrid::mc::
     region = simgrid::mc::region(type, start_addr, permanent_addr, size);
 
   region.object_info(object_info);
-  snapshot->snapshot_regions[index] =
-      std::unique_ptr<simgrid::mc::RegionSnapshot>(new simgrid::mc::RegionSnapshot(std::move(region)));
+  snapshot->snapshot_regions.push_back(
+      std::unique_ptr<simgrid::mc::RegionSnapshot>(new simgrid::mc::RegionSnapshot(std::move(region))));
 }
 
 static void get_memory_regions(simgrid::mc::RemoteClient* process, simgrid::mc::Snapshot* snapshot)
 {
-  const size_t n = process->object_infos.size();
-  snapshot->snapshot_regions.resize(n + 1);
-  int i = 0;
+  snapshot->snapshot_regions.clear();
+
   for (auto const& object_info : process->object_infos)
-    add_region(i++, snapshot, simgrid::mc::RegionType::Data, object_info.get(), object_info->start_rw,
-               object_info->start_rw, object_info->end_rw - object_info->start_rw);
+    add_region(snapshot, simgrid::mc::RegionType::Data, object_info.get(), object_info->start_rw, object_info->start_rw,
+               object_info->end_rw - object_info->start_rw);
 
   xbt_mheap_t heap = process->get_heap();
   void* start_heap = heap->base;
   void* end_heap   = heap->breakval;
 
-  add_region(n, snapshot, simgrid::mc::RegionType::Heap, nullptr, start_heap, start_heap,
+  add_region(snapshot, simgrid::mc::RegionType::Heap, nullptr, start_heap, start_heap,
              (char*)end_heap - (char*)start_heap);
   snapshot->heap_bytes_used = mmalloc_get_bytes_used_remote(heap->heaplimit, process->get_malloc_info());
 
@@ -415,87 +418,6 @@ static void snapshot_ignore_restore(simgrid::mc::Snapshot* snapshot)
     snapshot->process()->write_bytes(ignored_data.data.data(), ignored_data.data.size(), remote(ignored_data.start));
 }
 
-static std::vector<s_fd_infos_t> get_current_fds(pid_t pid)
-{
-  const size_t fd_dir_path_size = 20;
-  char fd_dir_path[fd_dir_path_size];
-  int res;
-  res = snprintf(fd_dir_path, fd_dir_path_size, "/proc/%lli/fd", (long long int)pid);
-  xbt_assert(res >= 0);
-  if ((size_t)res > fd_dir_path_size)
-    xbt_die("Unexpected buffer is too small for fd_dir_path");
-
-  DIR* fd_dir = opendir(fd_dir_path);
-  if (fd_dir == nullptr)
-    xbt_die("Cannot open directory '/proc/self/fd'\n");
-
-  std::vector<s_fd_infos_t> fds;
-
-  struct dirent* fd_number;
-  while ((fd_number = readdir(fd_dir))) {
-
-    int fd_value = xbt_str_parse_int(fd_number->d_name, "Found a non-numerical FD: %s. Freaking out!");
-
-    if (fd_value < 3)
-      continue;
-
-    const size_t source_size = 25;
-    char source[25];
-    res = snprintf(source, source_size, "/proc/%lli/fd/%s", (long long int)pid, fd_number->d_name);
-    xbt_assert(res >= 0);
-    if ((size_t)res > source_size)
-      xbt_die("Unexpected buffer is too small for fd %s", fd_number->d_name);
-
-    const size_t link_size = 200;
-    char link[200];
-    res = readlink(source, link, link_size);
-
-    if (res < 0)
-      xbt_die("Could not read link for %s", source);
-    if (res == 200)
-      xbt_die("Buffer to small for link of %s", source);
-
-    link[res] = '\0';
-
-#if HAVE_SMPI
-    if (smpi_is_privatization_file(link))
-      continue;
-#endif
-
-    // This is (probably) the DIR* we are reading:
-    // TODO, read all the file entries at once and close the DIR.*
-    if (strcmp(fd_dir_path, link) == 0)
-      continue;
-
-    // We don't handle them.
-    // It does not mean we should silently ignore them however.
-    if (strncmp(link, "pipe:", std::strlen("pipe:")) == 0 || strncmp(link, "socket:", std::strlen("socket:")) == 0)
-      continue;
-
-    // If dot_output enabled, do not handle the corresponding file
-    if (dot_output != nullptr) {
-      std::string link_basename = simgrid::xbt::Path(link).get_base_name();
-      if (link_basename == _sg_mc_dot_output_file.get())
-        continue;
-    }
-
-    // This is probably a shared memory used by lttng-ust:
-    if (strncmp("/dev/shm/ust-shm-tmp-", link, std::strlen("/dev/shm/ust-shm-tmp-")) == 0)
-      continue;
-
-    // Add an entry for this FD in the snapshot:
-    s_fd_infos_t fd;
-    fd.filename         = std::string(link);
-    fd.number           = fd_value;
-    fd.flags            = fcntl(fd_value, F_GETFL) | fcntl(fd_value, F_GETFD);
-    fd.current_position = lseek(fd_value, 0, SEEK_CUR);
-    fds.push_back(std::move(fd));
-  }
-
-  closedir(fd_dir);
-  return fds;
-}
-
 std::shared_ptr<simgrid::mc::Snapshot> take_snapshot(int num_state)
 {
   XBT_DEBUG("Taking snapshot %i", num_state);
@@ -509,9 +431,6 @@ std::shared_ptr<simgrid::mc::Snapshot> take_snapshot(int num_state)
 
   snapshot_handle_ignore(snapshot.get());
 
-  if (_sg_mc_snapshot_fds)
-    snapshot->current_fds = get_current_fds(mc_model_checker->process().pid());
-
   /* Save the std heap and the writable mapped pages of libsimgrid and binary */
   get_memory_regions(mc_process, snapshot.get());
 
@@ -521,10 +440,7 @@ std::shared_ptr<simgrid::mc::Snapshot> take_snapshot(int num_state)
     snapshot->stacks = take_snapshot_stacks(snapshot.get());
     if (_sg_mc_hash)
       snapshot->hash = simgrid::mc::hash(*snapshot);
-    else
-      snapshot->hash = 0;
-  } else
-    snapshot->hash = 0;
+  }
 
   snapshot_ignore_restore(snapshot.get());
   return snapshot;
@@ -532,7 +448,7 @@ std::shared_ptr<simgrid::mc::Snapshot> take_snapshot(int num_state)
 
 static inline void restore_snapshot_regions(simgrid::mc::Snapshot* snapshot)
 {
-  for (std::unique_ptr<s_mc_mem_region_t> const& region : snapshot->snapshot_regions) {
+  for (std::unique_ptr<simgrid::mc::RegionSnapshot> const& region : snapshot->snapshot_regions) {
     // For privatized, variables we decided it was not necessary to take the snapshot:
     if (region)
       restore(region.get());
@@ -547,29 +463,10 @@ static inline void restore_snapshot_regions(simgrid::mc::Snapshot* snapshot)
 #endif
 }
 
-static inline void restore_snapshot_fds(simgrid::mc::Snapshot* snapshot)
-{
-  xbt_die("FD snapshot not implemented in client/server mode.");
-
-  for (auto const& fd : snapshot->current_fds) {
-
-    int new_fd = open(fd.filename.c_str(), fd.flags);
-    if (new_fd < 0)
-      xbt_die("Could not reopen the file %s fo restoring the file descriptor", fd.filename.c_str());
-    if (new_fd != fd.number) {
-      dup2(new_fd, fd.number);
-      close(new_fd);
-    }
-    lseek(fd.number, fd.current_position, SEEK_SET);
-  }
-}
-
 void restore_snapshot(std::shared_ptr<simgrid::mc::Snapshot> snapshot)
 {
   XBT_DEBUG("Restore snapshot %i", snapshot->num_state);
   restore_snapshot_regions(snapshot.get());
-  if (_sg_mc_snapshot_fds)
-    restore_snapshot_fds(snapshot.get());
   snapshot_ignore_restore(snapshot.get());
   mc_model_checker->process().clear_cache();
 }
